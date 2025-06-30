@@ -1,6 +1,6 @@
-node_modules/
-dist/
+node_modules
+dist
+.test-repos/**
 *.log
-.DS_Store
-.test-repos/
 test-*.json
+**/.test-repos/**
