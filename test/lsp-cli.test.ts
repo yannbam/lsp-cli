@@ -8,7 +8,7 @@ describe('LSP CLI Tests', () => {
   beforeAll(async () => {
     // Setup test repository
     await setupTestRepo();
-  }, 60000); // 60 second timeout for cloning
+  }, 120000); // 120 second timeout for cloning
 
   afterEach(() => {
     // Clean up output files
@@ -42,6 +42,46 @@ describe('LSP CLI Tests', () => {
       runLSPCLI(join(projectPath, 'spine-cpp'), 'cpp', outputFile);
       
       expect(existsSync(join(LSP_SERVER_DIR, 'cpp', 'clangd'))).toBe(true);
+      expect(existsSync(outputFile)).toBe(true);
+    });
+
+    it('should install C language server', () => {
+      const outputFile = 'test-c.json';
+      const projectPath = getTestProjectPath('c');
+      
+      runLSPCLI(projectPath, 'c', outputFile);
+      
+      expect(existsSync(join(LSP_SERVER_DIR, 'c', 'clangd'))).toBe(true);
+      expect(existsSync(outputFile)).toBe(true);
+    });
+
+    it('should install Java language server', () => {
+      const outputFile = 'test-java.json';
+      const projectPath = getTestProjectPath('java');
+      
+      runLSPCLI(join(projectPath, 'spine-libgdx'), 'java', outputFile);
+      
+      expect(existsSync(join(LSP_SERVER_DIR, 'java'))).toBe(true);
+      expect(existsSync(outputFile)).toBe(true);
+    });
+
+    it('should install C# language server', () => {
+      const outputFile = 'test-csharp.json';
+      const projectPath = getTestProjectPath('csharp');
+      
+      runLSPCLI(projectPath, 'csharp', outputFile);
+      
+      expect(existsSync(join(LSP_SERVER_DIR, 'csharp'))).toBe(true);
+      expect(existsSync(outputFile)).toBe(true);
+    });
+
+    it('should install Haxe language server', () => {
+      const outputFile = 'test-haxe.json';
+      const projectPath = getTestProjectPath('haxe');
+      
+      runLSPCLI(projectPath, 'haxe', outputFile);
+      
+      expect(existsSync(join(LSP_SERVER_DIR, 'haxe'))).toBe(true);
       expect(existsSync(outputFile)).toBe(true);
     });
   });
@@ -133,7 +173,7 @@ describe('LSP CLI Tests', () => {
         const outputFile = 'test-csharp-symbols.json';
         const projectPath = getTestProjectPath('csharp');
         
-        runLSPCLI(join(projectPath, 'spine-csharp'), 'csharp', outputFile);
+        runLSPCLI(projectPath, 'csharp', outputFile);
         
         const result = readOutput(outputFile);
         expect(result.symbols.length).toBeGreaterThan(0);
@@ -146,6 +186,40 @@ describe('LSP CLI Tests', () => {
           c.children && c.children.some(child => child.kind === 'property')
         );
         expect(classWithProps).toBeDefined();
+      });
+    });
+
+    describe('C', () => {
+      it('should extract structs and functions', () => {
+        const outputFile = 'test-c-symbols.json';
+        const projectPath = getTestProjectPath('c');
+        
+        runLSPCLI(projectPath, 'c', outputFile);
+        
+        const result = readOutput(outputFile);
+        expect(result.symbols.length).toBeGreaterThan(0);
+        
+        const structs = findSymbolsByKind(result.symbols, 'struct');
+        const functions = findSymbolsByKind(result.symbols, 'function');
+        
+        expect(structs.length + functions.length).toBeGreaterThan(0);
+      });
+    });
+
+    describe('Haxe', () => {
+      it('should extract classes and interfaces', () => {
+        const outputFile = 'test-haxe-symbols.json';
+        const projectPath = getTestProjectPath('haxe');
+        
+        runLSPCLI(projectPath, 'haxe', outputFile);
+        
+        const result = readOutput(outputFile);
+        expect(result.symbols.length).toBeGreaterThan(0);
+        
+        const classes = findSymbolsByKind(result.symbols, 'class');
+        const interfaces = findSymbolsByKind(result.symbols, 'interface');
+        
+        expect(classes.length + interfaces.length).toBeGreaterThan(0);
       });
     });
   });
