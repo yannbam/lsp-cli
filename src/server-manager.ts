@@ -1,6 +1,6 @@
 import { homedir } from 'os';
 import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { SupportedLanguage, ServerConfig } from './types';
@@ -128,13 +128,28 @@ export class ServerManager {
     await downloadFile(url, downloadPath);
     await extractArchive(downloadPath, targetDir);
     
+    // Handle clangd directory renaming
+    const clangdVersionedDir = readdirSync(targetDir).find(name => name.startsWith('clangd_'));
+    if (clangdVersionedDir) {
+      const oldPath = join(targetDir, clangdVersionedDir);
+      const newPath = join(targetDir, 'clangd');
+      if (existsSync(oldPath) && !existsSync(newPath)) {
+        await execAsync(`mv "${oldPath}" "${newPath}"`);
+      }
+    }
+    
     // Make executables... executable
     if (process.platform !== 'win32') {
-      const files = ['clangd', 'OmniSharp'];
-      for (const file of files) {
-        const path = join(targetDir, file);
+      // Check for executables in various locations
+      const executablePaths = [
+        join(targetDir, 'clangd', 'bin', 'clangd'),
+        join(targetDir, 'OmniSharp'),
+        join(targetDir, 'clangd'), // In case it's directly in the directory
+      ];
+      
+      for (const path of executablePaths) {
         if (existsSync(path)) {
-          await execAsync(`chmod +x ${path}`);
+          await execAsync(`chmod +x "${path}"`);
         }
       }
     }
