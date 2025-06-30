@@ -55,6 +55,10 @@ export async function checkToolchain(language: SupportedLanguage): Promise<Toolc
                 await execAsync('node --version');
                 return { installed: true, message: 'Node.js found' };
 
+            case 'dart':
+                await execAsync('dart --version');
+                return { installed: true, message: 'Dart SDK found' };
+
             default:
                 return { installed: false, message: `Unknown language: ${language}` };
         }
@@ -65,7 +69,8 @@ export async function checkToolchain(language: SupportedLanguage): Promise<Toolc
             c: 'Install C compiler (see above)',
             csharp: 'Install .NET SDK:\n  Download from https://dotnet.microsoft.com',
             haxe: 'Install Haxe:\n  Download from https://haxe.org or use your package manager',
-            typescript: 'Install Node.js:\n  Download from https://nodejs.org'
+            typescript: 'Install Node.js:\n  Download from https://nodejs.org',
+            dart: 'Install Dart SDK:\n  Download from https://dart.dev/get-dart'
         };
 
         return {
@@ -85,7 +90,8 @@ export async function checkProjectFiles(
         c: ['compile_commands.json', '.clangd', 'Makefile'],
         csharp: ['.csproj', '.sln'],
         haxe: ['build.hxml', 'haxe.json'],
-        typescript: ['tsconfig.json', 'jsconfig.json']
+        typescript: ['tsconfig.json', 'jsconfig.json'],
+        dart: ['pubspec.yaml', 'analysis_options.yaml']
     };
 
     const required = projectFiles[language];
@@ -111,7 +117,8 @@ export async function checkProjectFiles(
         c: 'No C project files found. Generate compile_commands.json or create a Makefile.',
         csharp: 'No C# project files found. Create a .csproj file or use: dotnet new console',
         haxe: 'No Haxe project files found. Create a build.hxml file.',
-        typescript: 'No TypeScript config found. Create tsconfig.json using: npx tsc --init'
+        typescript: 'No TypeScript config found. Create tsconfig.json using: npx tsc --init',
+        dart: 'No Dart project files found. Create a pubspec.yaml file or use: dart create .'
     };
 
     return {

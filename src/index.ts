@@ -76,7 +76,15 @@ program
                     process.exit(1);
                 }
 
-                const supportedLanguages: SupportedLanguage[] = ['java', 'cpp', 'c', 'csharp', 'haxe', 'typescript'];
+                const supportedLanguages: SupportedLanguage[] = [
+                    'java',
+                    'cpp',
+                    'c',
+                    'csharp',
+                    'haxe',
+                    'typescript',
+                    'dart'
+                ];
                 if (!supportedLanguages.includes(language as SupportedLanguage)) {
                     logger.error(
                         `Unsupported language '${language}'`,

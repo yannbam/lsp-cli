@@ -38,6 +38,7 @@ lsp-cli <directory> <language> <output-file>
 - `csharp` - C# (requires .NET SDK)
 - `haxe` - Haxe (requires Haxe compiler)
 - `typescript` - TypeScript (requires Node.js)
+- `dart` - Dart (requires Dart SDK)
 
 ### Example
 
@@ -95,6 +96,7 @@ Each language requires its toolchain installed:
 - C#: .NET SDK
 - Haxe: Haxe compiler
 - TypeScript: Node.js
+- Dart: Dart SDK
 
 ### Project Files
 For best results, projects should have proper configuration:
@@ -103,6 +105,7 @@ For best results, projects should have proper configuration:
 - C#: `.csproj` or `.sln`
 - Haxe: `build.hxml` or `haxe.json`
 - TypeScript: `tsconfig.json`
+- Dart: `pubspec.yaml`
 
 ## LSP Servers
 

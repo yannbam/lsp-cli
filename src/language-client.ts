@@ -712,7 +712,8 @@ export class LanguageClient {
             c: 'c',
             csharp: 'csharp',
             haxe: 'haxe',
-            typescript: 'typescript'
+            typescript: 'typescript',
+            dart: 'dart'
         };
         return languageMap[this.language];
     }
@@ -724,6 +725,7 @@ export class LanguageClient {
             c: ['.c', '.h'],
             csharp: ['.cs'],
             haxe: ['.hx'],
+            dart: ['.dart'],
             typescript: ['.ts', '.tsx']
         };
 

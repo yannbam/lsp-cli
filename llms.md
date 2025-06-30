@@ -26,7 +26,7 @@ lsp-cli <directory> <language> <output-file>
 
 ### Parameters
 - `<directory>`: Path to the source code directory to analyze
-- `<language>`: Programming language (java, cpp, c, csharp, haxe, typescript)
+- `<language>`: Programming language (java, cpp, c, csharp, haxe, typescript, dart)
 - `<output-file>`: Path where the JSON output will be written
 
 ## JSON Output Structure
@@ -150,6 +150,27 @@ lsp-cli <directory> <language> <output-file>
 
 ### C#
 **Note:** C# is current broken
+
+### Dart
+**Top-level symbols:**
+- `class`: Class definitions
+- `enum`: Enum definitions
+- `function`: Top-level functions
+- `variable`: Top-level variables and constants
+- `typedef`: Type aliases
+
+**Nested symbols (children):**
+- `method`: Instance and static methods
+- `field`: Instance fields
+- `constructor`: Class constructors
+- `constant`: Class constants
+- `property`: Getters and setters
+- `enumMember`: Enum values
+
+**Notes:**
+- Dart LSP server requires the Dart SDK to be installed
+- The LSP server is included with the SDK (`dart language-server` command)
+- Supports analysis_options.yaml for project-specific linting rules
 
 ## Querying the JSON files
 

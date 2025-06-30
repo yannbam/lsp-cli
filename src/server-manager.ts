@@ -54,6 +54,8 @@ export class ServerManager {
                 return existsSync(join(serverDir, 'server.js'));
             case 'typescript':
                 return existsSync(join(serverDir, 'node_modules', '.bin', 'typescript-language-server'));
+            case 'dart':
+                return existsSync(join(serverDir, 'dart-language-server'));
             default:
                 return false;
         }
@@ -144,6 +146,20 @@ export class ServerManager {
                     }
                 };
 
+            case 'dart':
+                return {
+                    downloadUrl: '',
+                    command: ['dart', 'language-server'],
+                    installScript: async (targetDir: string) => {
+                        // Dart LSP comes with the Dart SDK, so we'll create a wrapper script
+                        const wrapperScript = `#!/bin/sh
+exec dart language-server "$@"
+`;
+                        const wrapperPath = join(targetDir, 'dart-language-server');
+                        await execAsync(`echo '${wrapperScript}' > ${wrapperPath} && chmod +x ${wrapperPath}`);
+                    }
+                };
+
             default:
                 throw new Error(`Unsupported language: ${language}`);
         }
@@ -225,6 +241,9 @@ export class ServerManager {
 
             case 'typescript':
                 return [join(serverDir, 'node_modules', '.bin', 'typescript-language-server'), '--stdio'];
+
+            case 'dart':
+                return [join(serverDir, 'dart-language-server')];
 
             default:
                 throw new Error(`Unsupported language: ${language}`);
