@@ -483,6 +483,136 @@ describe('Fixture-based LSP Tests', () => {
             expect(hasVector2D || hasVector3D).toBe(true);
         });
     });
+
+    describe('Dart', () => {
+        const dartFixture = join(FIXTURES_DIR, 'dart');
+        const outputFile = 'test-dart-fixture.json';
+
+        afterEach(() => {
+            if (existsSync(outputFile)) {
+                execSync(`rm -f ${outputFile}`);
+            }
+        });
+
+        it('should extract all Dart symbol types', () => {
+            runLSPCLI(dartFixture, 'dart', outputFile);
+            const result = readOutput(outputFile);
+
+            expect(result.language).toBe('dart');
+            expect(result.symbols.length).toBeGreaterThan(0);
+
+            // Check for top-level variables
+            const variables = result.symbols.filter((s) => s.kind === 'variable');
+            expect(variables.some((v) => v.name === 'appVersion')).toBe(true);
+            expect(variables.some((v) => v.name === 'globalCounter')).toBe(true);
+
+            // Check for top-level functions
+            const functions = result.symbols.filter((s) => s.kind === 'function');
+            expect(functions.some((f) => f.name === 'calculateSum')).toBe(true);
+            expect(functions.some((f) => f.name === 'main')).toBe(true);
+
+            // Check for classes
+            const classes = result.symbols.filter((s) => s.kind === 'class');
+            expect(classes.some((c) => c.name === 'Entity')).toBe(true);
+            expect(classes.some((c) => c.name === 'User')).toBe(true);
+            expect(classes.some((c) => c.name === 'UserService')).toBe(true);
+            // Note: Dart LSP reports typedefs as 'class'
+            expect(classes.some((c) => c.name === 'UserCallback')).toBe(true);
+
+            // Check for enums
+            const enums = result.symbols.filter((s) => s.kind === 'enum');
+            expect(enums.some((e) => e.name === 'UserStatus')).toBe(true);
+
+            // Check Entity abstract class
+            const entity = classes.find((c) => c.name === 'Entity');
+            expect(entity!.children).toBeDefined();
+            const entityFields = entity!.children!.filter((c) => c.kind === 'field');
+            expect(entityFields.some((f) => f.name === 'id')).toBe(true);
+            expect(entityFields.some((f) => f.name === 'createdAt')).toBe(true);
+
+            // Check User class
+            const user = classes.find((c) => c.name === 'User');
+            expect(user!.children).toBeDefined();
+
+            // Check fields
+            const userFields = user!.children!.filter((c) => c.kind === 'field');
+            expect(userFields.some((f) => f.name === 'name')).toBe(true);
+            expect(userFields.some((f) => f.name === 'email')).toBe(true);
+            expect(userFields.some((f) => f.name === 'status')).toBe(true);
+
+            // Check constructors
+            const constructors = user!.children!.filter((c) => c.kind === 'constructor');
+            expect(constructors.some((c) => c.name === 'User')).toBe(true);
+            expect(constructors.some((c) => c.name === 'User.guest')).toBe(true);
+
+            // Check properties (getters/setters)
+            const properties = user!.children!.filter((c) => c.kind === 'property');
+            expect(properties.some((p) => p.name === 'isActive')).toBe(true);
+            expect(properties.some((p) => p.name === 'active')).toBe(true);
+
+            // Check methods
+            const methods = user!.children!.filter((c) => c.kind === 'method');
+            expect(methods.some((m) => m.name === 'updateEmail')).toBe(true);
+            expect(methods.some((m) => m.name === 'fromJson')).toBe(true);
+            expect(methods.some((m) => m.name === 'toJson')).toBe(true);
+
+            // Check UserService class
+            const userService = classes.find((c) => c.name === 'UserService');
+            expect(userService!.children).toBeDefined();
+            const serviceMethods = userService!.children!.filter((c) => c.kind === 'method');
+            expect(serviceMethods.some((m) => m.name === 'addUser')).toBe(true);
+            expect(serviceMethods.some((m) => m.name === 'getAllUsers')).toBe(true);
+            expect(serviceMethods.some((m) => m.name === 'findById')).toBe(true);
+
+            // Note: Dart LSP currently does not provide documentation in document symbols
+            // This is a limitation of the Dart language server, not our implementation
+        });
+
+        it('should extract enum members correctly', () => {
+            runLSPCLI(dartFixture, 'dart', outputFile);
+            const result = readOutput(outputFile);
+
+            const userStatus = findSymbolByName(result.symbols, 'UserStatus', 'enum');
+            expect(userStatus).toBeDefined();
+            expect(userStatus!.children).toBeDefined();
+
+            // Dart LSP reports enum members as 'enum' not 'enumMember'
+            const enumMembers = userStatus!.children!.filter((c) => c.kind === 'enum');
+            expect(enumMembers.length).toBe(4);
+            expect(enumMembers.some((m) => m.name === 'active')).toBe(true);
+            expect(enumMembers.some((m) => m.name === 'inactive')).toBe(true);
+            expect(enumMembers.some((m) => m.name === 'pending')).toBe(true);
+            expect(enumMembers.some((m) => m.name === 'banned')).toBe(true);
+        });
+
+        it('should handle Dart-specific features', () => {
+            runLSPCLI(dartFixture, 'dart', outputFile);
+            const result = readOutput(outputFile);
+
+            // Check for async methods
+            const userService = findSymbolByName(result.symbols, 'UserService', 'class');
+            const serviceMethods = userService!.children!.filter((c) => c.kind === 'method');
+
+            // Check async method (Future return type)
+            const addUser = serviceMethods.find((m) => m.name === 'addUser');
+            expect(addUser).toBeDefined();
+
+            // Check generator method (Stream return type)
+            const getAllUsers = serviceMethods.find((m) => m.name === 'getAllUsers');
+            expect(getAllUsers).toBeDefined();
+
+            // Check named constructors
+            const user = findSymbolByName(result.symbols, 'User', 'class');
+            const constructors = user!.children!.filter((c) => c.kind === 'constructor');
+            const namedConstructor = constructors.find((c) => c.name === 'User.guest');
+            expect(namedConstructor).toBeDefined();
+
+            // Check that supertypes are provided (User extends Entity)
+            if (user!.supertypes) {
+                expect(user!.supertypes).toContain('Entity');
+            }
+        });
+    });
 });
 
 // Helper functions

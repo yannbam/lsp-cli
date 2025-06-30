@@ -165,7 +165,7 @@ lsp-cli <directory> <language> <output-file>
 - `constructor`: Class constructors
 - `constant`: Class constants
 - `property`: Getters and setters
-- `enumMember`: Enum values
+- `enum`: Enum values (Note: Dart LSP reports enum members as 'enum' not 'enumMember')
 
 **Notes:**
 - Dart LSP server requires the Dart SDK to be installed
