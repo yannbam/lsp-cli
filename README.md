@@ -29,6 +29,7 @@ lsp-cli <directory> <language> <output-file>
 
 ### Options
 - `-v, --verbose` - Enable verbose logging
+- `--llm` - Copy llms.md documentation to current directory (for LLM consumption)
 
 ### Supported Languages
 - `java` - Java (requires JDK)
@@ -46,6 +47,9 @@ npx tsx src/index.ts /path/to/java/project java types.json
 
 # With verbose logging
 npx tsx src/index.ts /path/to/java/project java types.json -v
+
+# Copy LLM documentation to current directory
+lsp-cli --llm
 ```
 
 ## Output
