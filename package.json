@@ -1,32 +1,36 @@
 {
-  "name": "@mariozechner/lsp-cli",
-  "version": "1.0.0",
-  "description": "CLI tool to extract types from codebases using LSP servers",
-  "main": "dist/index.js",
-  "bin": {
-    "lsp-cli": "dist/index.js"
-  },
-  "scripts": {
-    "start": "tsx src/index.ts",
-    "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build",
-    "test": "vitest"
-  },
-  "dependencies": {
-    "commander": "^11.0.0",
-    "tar": "^6.2.0",
-    "unzipper": "^0.10.0",
-    "vscode-jsonrpc": "^8.2.0",
-    "vscode-languageserver-protocol": "^3.17.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/tar": "^6.1.0",
-    "@types/unzipper": "^0.10.0",
-    "esbuild": "^0.19.0",
-    "tsx": "^4.0.0",
-    "typescript": "^5.0.0",
-    "vitest": "^3.2.4"
-  }
+	"name": "@mariozechner/lsp-cli",
+	"version": "1.0.0",
+	"description": "CLI tool to extract types from codebases using LSP servers",
+	"main": "dist/index.js",
+	"bin": {
+		"lsp-cli": "dist/index.js"
+	},
+	"scripts": {
+		"start": "tsx src/index.ts",
+		"build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check --write .",
+		"format": "biome format --write .",
+		"check": "npm run lint && npm run format && npm run typecheck",
+		"prepublishOnly": "npm run build",
+		"test": "vitest"
+	},
+	"dependencies": {
+		"commander": "^11.0.0",
+		"tar": "^6.2.0",
+		"unzipper": "^0.10.0",
+		"vscode-jsonrpc": "^8.2.0",
+		"vscode-languageserver-protocol": "^3.17.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.6",
+		"@types/node": "^20.0.0",
+		"@types/tar": "^6.1.0",
+		"@types/unzipper": "^0.10.0",
+		"esbuild": "^0.19.0",
+		"tsx": "^4.0.0",
+		"typescript": "^5.0.0",
+		"vitest": "^3.2.4"
+	}
 }
