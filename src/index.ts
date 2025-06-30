@@ -66,14 +66,14 @@ program
       console.log(`Analyzing ${dir}...`);
       
       await client.start();
-      const types = await client.analyzeDirectory();
+      const symbols = await client.analyzeDirectory();
       await client.stop();
 
       // Output JSON
       const output = {
         language: lang,
         directory: dir,
-        types
+        symbols
       };
       
       const jsonOutput = JSON.stringify(output, null, 2);

@@ -1,6 +1,6 @@
 # LSP CLI
 
-A command-line tool that uses Language Server Protocol (LSP) servers to extract type information from codebases.
+A command-line tool that uses Language Server Protocol (LSP) servers to extract symbol information from codebases.
 
 ## Installation
 
@@ -50,13 +50,13 @@ npx tsx src/index.ts /path/to/java/project java types.json -v
 
 ## Output
 
-The tool outputs JSON with all types found in the codebase:
+The tool outputs JSON with all symbols found in the codebase:
 
 ```json
 {
   "language": "java",
   "directory": "/path/to/project",
-  "types": [
+  "symbols": [
     {
       "name": "MyClass",
       "kind": "class",
@@ -73,7 +73,8 @@ The tool outputs JSON with all types found in the codebase:
           "name": "myMethod",
           "kind": "method",
           "range": { ... },
-          "preview": [ ... ]
+          "preview": [ ... ],
+          "children": [ ... ]
         }
       ]
     }

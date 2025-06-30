@@ -10,7 +10,7 @@ export interface Range {
   end: Position;
 }
 
-export interface TypeInfo {
+export interface SymbolInfo {
   name: string;
   kind: string;
   file: string;
@@ -18,7 +18,7 @@ export interface TypeInfo {
   preview: string;
   documentation?: string;
   supertypes?: string[];
-  members?: TypeInfo[];
+  children?: SymbolInfo[];
 }
 
 export interface ToolchainCheckResult {

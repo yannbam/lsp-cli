@@ -22,7 +22,7 @@ import {
   TypeHierarchySupertypesRequest,
   TypeHierarchyItem
 } from 'vscode-languageserver-protocol/node';
-import { SupportedLanguage, TypeInfo, Range } from './types';
+import { SupportedLanguage, SymbolInfo, Range } from './types';
 import { ServerManager } from './server-manager';
 import { getAllFiles } from './utils';
 
@@ -160,12 +160,12 @@ export class LanguageClient {
     }
   }
 
-  async analyzeDirectory(): Promise<TypeInfo[]> {
+  async analyzeDirectory(): Promise<SymbolInfo[]> {
     if (!this.connection || !this.initialized) {
       throw new Error('Client not initialized');
     }
 
-    const types: TypeInfo[] = [];
+    const symbols: SymbolInfo[] = [];
     const files = this.getSourceFiles();
     
     console.log(`Found ${files.length} ${this.language} files to analyze`);
@@ -181,18 +181,18 @@ export class LanguageClient {
       }
 
       try {
-        const fileTypes = await this.analyzeFile(file);
-        types.push(...fileTypes);
+        const fileSymbols = await this.analyzeFile(file);
+        symbols.push(...fileSymbols);
       } catch (error) {
         console.error(`Error analyzing ${file}:`, error);
       }
     }
 
-    console.log(`Analysis complete: found ${types.length} types`);
-    return types;
+    console.log(`Analysis complete: found ${symbols.length} symbols`);
+    return symbols;
   }
 
-  private async analyzeFile(filePath: string): Promise<TypeInfo[]> {
+  private async analyzeFile(filePath: string): Promise<SymbolInfo[]> {
     if (!this.connection) {
       throw new Error('Connection not established');
     }
@@ -239,19 +239,19 @@ export class LanguageClient {
       return [];
     }
 
-    return await this.extractTypes(symbols, filePath, lines);
+    return await this.extractSymbols(symbols, filePath, lines);
   }
 
-  private async extractTypes(
+  private async extractSymbols(
     symbols: DocumentSymbol[],
     filePath: string,
     lines: string[]
-  ): Promise<TypeInfo[]> {
-    const types: TypeInfo[] = [];
+  ): Promise<SymbolInfo[]> {
+    const allSymbols: SymbolInfo[] = [];
 
     for (const symbol of symbols) {
-      if (this.isTypeSymbol(symbol)) {
-        const typeInfo: TypeInfo = {
+      // Extract ALL symbols, not just types
+      const symbolInfo: SymbolInfo = {
           name: symbol.name,
           kind: this.getSymbolKindName(symbol.kind),
           file: filePath,
@@ -264,43 +264,15 @@ export class LanguageClient {
           },
           preview: lines[symbol.selectionRange.start.line]?.trim() || '',
           documentation: this.extractDocumentation(lines, symbol.selectionRange.start.line),
-          supertypes: await this.getSupertypes(filePath, symbol.selectionRange.start),
-          members: symbol.children ? this.extractMembers(symbol.children, lines) : undefined
+          supertypes: this.isTypeSymbol(symbol) ? await this.getSupertypes(filePath, symbol.selectionRange.start) : undefined,
+          children: symbol.children ? await this.extractSymbols(symbol.children, filePath, lines) : undefined
         };
-        types.push(typeInfo);
-      }
-
-      // Also check nested types
-      if (symbol.children) {
-        types.push(...await this.extractTypes(symbol.children, filePath, lines));
-      }
+        allSymbols.push(symbolInfo);
     }
 
-    return types;
+    return allSymbols;
   }
 
-  private extractMembers(
-    symbols: DocumentSymbol[],
-    lines: string[]
-  ): TypeInfo[] {
-    return symbols
-      .filter(s => this.isMemberSymbol(s))
-      .map(symbol => ({
-        name: symbol.name,
-        kind: this.getSymbolKindName(symbol.kind),
-        file: '', // Members don't need file path
-        range: {
-          start: {
-            line: symbol.selectionRange.start.line,
-            character: 0
-          },
-          end: this.convertPosition(symbol.range.end)
-        },
-        preview: lines[symbol.selectionRange.start.line]?.trim() || '',
-        documentation: this.extractDocumentation(lines, symbol.selectionRange.start.line),
-        supertypes: undefined // Members don't have supertypes
-      }));
-  }
 
   private getPreviewLines(lines: string[], range: LSPRange): string[] {
     const startLine = range.start.line;
