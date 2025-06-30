@@ -36,7 +36,8 @@ program
                 const logger = new Logger();
                 try {
                     // Find llms.md in the same directory as the script
-                    const scriptDir = dirname(process.argv[1]);
+                    const scriptPath = require.resolve(process.argv[1]);
+                    const scriptDir = dirname(scriptPath);
                     const sourcePath = join(scriptDir, 'llms.md');
                     const destPath = join(process.cwd(), 'llms.md');
 
