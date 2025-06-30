@@ -1,0 +1,12 @@
+{
+    "name": "lsp-cli-typescript-test",
+    "version": "1.0.0",
+    "description": "TypeScript test fixture for LSP CLI",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

@@ -92,7 +92,8 @@ export class LanguageClient {
         });
 
         this.connection.onClose(() => {
-            console.log('LSP connection closed');
+            console.log('LSP connection closed, exiting');
+            process.exit(0);
         });
 
         // Start listening
