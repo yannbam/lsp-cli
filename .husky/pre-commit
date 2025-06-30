@@ -1,1 +1,6 @@
 npm run check
+
+# If files were modified by the formatter, stage them
+if ! git diff --quiet; then
+    git add -u
+fi
