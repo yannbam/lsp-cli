@@ -10,7 +10,7 @@
         "start": "tsx src/index.ts",
         "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js",
         "typecheck": "tsc --noEmit",
-        "lint": "biome check --write .",
+        "lint": "biome check --write . --error-on-warnings",
         "format": "biome format --write .",
         "check": "npm run lint && npm run format && npm run typecheck",
         "prepublishOnly": "npm run build",

@@ -369,7 +369,7 @@ export class LanguageClient {
                     },
                     preview
                 };
-            } catch (error) {
+            } catch (_error) {
                 // If we can't read the file, still return the location without preview
                 return {
                     file: definitionFile,
