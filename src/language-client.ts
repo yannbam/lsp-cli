@@ -517,19 +517,34 @@ export class LanguageClient {
 
   private getSymbolKindName(kind: SymbolKind): string {
     const kindMap: { [key: number]: string } = {
+      [SymbolKind.File]: 'file',
+      [SymbolKind.Module]: 'module',
+      [SymbolKind.Namespace]: 'namespace',
+      [SymbolKind.Package]: 'package',
       [SymbolKind.Class]: 'class',
-      [SymbolKind.Interface]: 'interface',
-      [SymbolKind.Enum]: 'enum',
-      [SymbolKind.Struct]: 'struct',
       [SymbolKind.Method]: 'method',
-      [SymbolKind.Function]: 'function',
-      [SymbolKind.Field]: 'field',
       [SymbolKind.Property]: 'property',
+      [SymbolKind.Field]: 'field',
       [SymbolKind.Constructor]: 'constructor',
+      [SymbolKind.Enum]: 'enum',
+      [SymbolKind.Interface]: 'interface',
+      [SymbolKind.Function]: 'function',
+      [SymbolKind.Variable]: 'variable',
       [SymbolKind.Constant]: 'constant',
-      [SymbolKind.Variable]: 'variable'
+      [SymbolKind.String]: 'string',
+      [SymbolKind.Number]: 'number',
+      [SymbolKind.Boolean]: 'boolean',
+      [SymbolKind.Array]: 'array',
+      [SymbolKind.Object]: 'object',
+      [SymbolKind.Key]: 'key',
+      [SymbolKind.Null]: 'null',
+      [SymbolKind.EnumMember]: 'enumMember',
+      [SymbolKind.Struct]: 'struct',
+      [SymbolKind.Event]: 'event',
+      [SymbolKind.Operator]: 'operator',
+      [SymbolKind.TypeParameter]: 'typeParameter'
     };
-    return kindMap[kind] || 'unknown';
+    return kindMap[kind] || `unknown-${kind}`;
   }
 
   private getLanguageId(): string {
