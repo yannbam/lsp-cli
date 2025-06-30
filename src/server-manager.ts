@@ -111,7 +111,26 @@ export class ServerManager {
                     downloadUrl: '',
                     command: ['haxe-language-server'],
                     installScript: async (targetDir: string) => {
-                        await execAsync(`npm install --prefix ${targetDir} @vshaxe/language-server`);
+                        console.log('Building Haxe language server from source...');
+                        
+                        const buildDir = join(targetDir, 'haxe-language-server');
+                        
+                        // Clone the repository if it doesn't exist
+                        if (!existsSync(buildDir)) {
+                            await execAsync(`git clone https://github.com/vshaxe/haxe-language-server.git ${buildDir}`);
+                        }
+                        
+                        // Install dependencies and build
+                        await execAsync('npm ci', { cwd: buildDir });
+                        
+                        // Run lix with --yes flag to avoid prompts and set CI environment
+                        await execAsync('npx --yes lix run vshaxe-build -t language-server', { 
+                            cwd: buildDir,
+                            env: { ...process.env, CI: 'true' }
+                        });
+                        
+                        // Copy the built server to the expected location
+                        await execAsync(`cp ${buildDir}/bin/server.js ${targetDir}/server.js`);
                     }
                 };
 
@@ -201,7 +220,7 @@ export class ServerManager {
                 return [join(serverDir, 'OmniSharp'), '-lsp'];
 
             case 'haxe':
-                return ['node', join(serverDir, 'node_modules', '@vshaxe', 'language-server', 'bin', 'server.js')];
+                return ['node', join(serverDir, 'server.js')];
 
             case 'typescript':
                 return [join(serverDir, 'node_modules', '.bin', 'typescript-language-server'), '--stdio'];

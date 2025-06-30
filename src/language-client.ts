@@ -139,7 +139,9 @@ export class LanguageClient {
 
         // Wait for the server to be ready - some servers need time after initialized
         // This is especially true for Java LSP which needs to index the project
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        // C# OmniSharp also needs extra time to load the solution
+        const waitTime = this.language === 'csharp' ? 10000 : 3000;
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
 
         this.initialized = true;
     }
@@ -232,7 +234,16 @@ export class LanguageClient {
 
         const symbols = await Promise.race([symbolsPromise, timeoutPromise]);
 
-        if (!symbols) {
+        // Debug logging for C#
+        if (this.language === 'csharp') {
+            console.log(`[DEBUG] Document symbols response for ${filePath}:`, 
+                symbols === null ? 'null' : 
+                symbols === undefined ? 'undefined' : 
+                Array.isArray(symbols) ? `array of ${symbols.length}` : 
+                typeof symbols);
+        }
+
+        if (!symbols || (Array.isArray(symbols) && symbols.length === 0)) {
             return [];
         }
 
