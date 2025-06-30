@@ -22,7 +22,7 @@ import {
     TypeHierarchySupertypesRequest
 } from 'vscode-languageserver-protocol/node';
 import { ServerManager } from './server-manager';
-import type { Position, Range, SupportedLanguage, SymbolInfo } from './types';
+import type { Position, SupportedLanguage, SymbolInfo } from './types';
 import { getAllFiles } from './utils';
 
 export class LanguageClient {
