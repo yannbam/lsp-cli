@@ -318,14 +318,12 @@ describe('Fixture-based LSP Tests', () => {
             expect(variables.some((v) => v.name === 'g_program_name')).toBe(true);
             expect(variables.some((v) => v.name === 's_counter')).toBe(true);
 
-            // Check struct members - LinkedList typedef doesn't have children
-            // The actual struct with fields is anonymous
-            const anonymousStruct = structs.find(
-                (s) => s.name === '(anonymous struct)' && s.children?.some((c) => c.name === 'head')
-            );
-            expect(anonymousStruct).toBeDefined();
-            expect(anonymousStruct!.children).toBeDefined();
-            const fields = anonymousStruct!.children!.filter((c) => c.kind === 'field');
+            // Check struct members - LinkedList should now have the children directly
+            // after typedef merging
+            const linkedList = structs.find((s) => s.name === 'LinkedList');
+            expect(linkedList).toBeDefined();
+            expect(linkedList!.children).toBeDefined();
+            const fields = linkedList!.children!.filter((c) => c.kind === 'field');
             expect(fields.some((f) => f.name === 'head')).toBe(true);
             expect(fields.some((f) => f.name === 'tail')).toBe(true);
             expect(fields.some((f) => f.name === 'size')).toBe(true);
@@ -351,6 +349,54 @@ describe('Fixture-based LSP Tests', () => {
             // The typedef struct should be found
             const dsInfo = structs.find((s) => s.name === 'DataStructureInfo');
             expect(dsInfo).toBeDefined();
+        });
+
+        it('should merge typedef structs and unions correctly', () => {
+            runLSPCLI(cFixture, 'c', outputFile);
+            const result = readOutput(outputFile);
+
+            const allSymbols = flattenSymbols(result.symbols);
+            
+            // Check that anonymous structs are properly merged
+            // Note: There's one legitimate anonymous struct - the nested version struct in DataStructureInfo
+            const anonymousStructs = allSymbols.filter((s) => s.name.includes('(anonymous struct)'));
+            expect(anonymousStructs.length).toBe(1); // Only the nested version struct should remain
+            
+            // Verify it's the nested struct with version fields
+            const nestedStruct = anonymousStructs[0];
+            expect(nestedStruct.children).toBeDefined();
+            const versionFields = nestedStruct.children!.filter((c) => c.kind === 'field');
+            expect(versionFields.some((f) => f.name === 'major')).toBe(true);
+            expect(versionFields.some((f) => f.name === 'minor')).toBe(true);
+            expect(versionFields.some((f) => f.name === 'patch')).toBe(true);
+            
+            // Check that anonymous unions are properly merged
+            const anonymousUnions = allSymbols.filter((s) => s.name.includes('(anonymous union)'));
+            expect(anonymousUnions.length).toBe(0); // All should be merged
+            
+            // Check for DataValue union (was anonymous)
+            const dataValue = allSymbols.find((s) => s.name === 'DataValue' && s.kind === 'class');
+            expect(dataValue).toBeDefined();
+            expect(dataValue!.children).toBeDefined();
+            const unionFields = dataValue!.children!.filter((c) => c.kind === 'field');
+            expect(unionFields.some((f) => f.name === 'int_value')).toBe(true);
+            expect(unionFields.some((f) => f.name === 'float_value')).toBe(true);
+            expect(unionFields.some((f) => f.name === 'string_value')).toBe(true);
+            expect(unionFields.some((f) => f.name === 'ptr_value')).toBe(true);
+            
+            // Check that named typedefs don't have duplicates
+            const listNodes = allSymbols.filter((s) => s.name === 'ListNode' && s.kind === 'class');
+            expect(listNodes.length).toBe(1); // Should only have one ListNode
+            
+            const hashEntries = allSymbols.filter((s) => s.name === 'HashEntry' && s.kind === 'class');
+            expect(hashEntries.length).toBe(1); // Should only have one HashEntry
+            
+            // Verify ListNode has its fields
+            const listNode = listNodes[0];
+            expect(listNode.children).toBeDefined();
+            const listNodeFields = listNode.children!.filter((c) => c.kind === 'field');
+            expect(listNodeFields.some((f) => f.name === 'data')).toBe(true);
+            expect(listNodeFields.some((f) => f.name === 'next')).toBe(true);
         });
     });
 

@@ -143,12 +143,6 @@ export class LanguageClient {
 
         await this.connection.sendNotification('initialized', {});
 
-        // Wait for the server to be ready - some servers need time after initialized
-        // This is especially true for Java LSP which needs to index the project
-        // C# OmniSharp also needs extra time to load the solution
-        const waitTime = this.language === 'csharp' ? 10000 : 3000;
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
-
         this.initialized = true;
     }
 
@@ -302,6 +296,11 @@ export class LanguageClient {
             }
 
             allSymbols.push(symbolInfo);
+        }
+
+        // Post-process C/C++ anonymous structs with typedef names
+        if (this.language === 'c' || this.language === 'cpp') {
+            return this.mergeAnonymousStructsWithTypedefs(allSymbols);
         }
 
         return allSymbols;
@@ -542,6 +541,51 @@ export class LanguageClient {
             .filter((line) => line.length > 0)
             .join('\n')
             .trim();
+    }
+
+    private mergeAnonymousStructsWithTypedefs(symbols: SymbolInfo[]): SymbolInfo[] {
+        const result: SymbolInfo[] = [];
+        const toSkip = new Set<number>();
+
+        for (let i = 0; i < symbols.length; i++) {
+            if (toSkip.has(i)) continue;
+
+            const current = symbols[i];
+            
+            // Check if this is an anonymous struct/union/enum OR a named struct/union with a typedef
+            if (i + 1 < symbols.length) {
+                const next = symbols[i + 1];
+                
+                // Check if the next symbol is within the range of the current struct/union
+                // and is on the same ending line (typical for typedef)
+                if (
+                    next.range.start.line >= current.range.start.line &&
+                    next.range.end.line <= current.range.end.line &&
+                    next.kind === 'class' && // typedef names are often reported as 'class' kind
+                    current.kind === 'class' &&
+                    (current.name.includes('(anonymous') || current.name === next.name) // anonymous or same name
+                ) {
+                    // Merge: keep the struct definition with its children but skip the duplicate typedef
+                    const merged: SymbolInfo = {
+                        ...current,
+                        name: next.name, // Use typedef name for anonymous structs
+                        // Keep the struct's full range and children
+                    };
+                    result.push(merged);
+                    toSkip.add(i + 1); // Skip the typedef name entry
+                    continue;
+                }
+            }
+            
+            // If this symbol has children, recursively process them
+            if (current.children) {
+                current.children = this.mergeAnonymousStructsWithTypedefs(current.children);
+            }
+            
+            result.push(current);
+        }
+
+        return result;
     }
 
     private async getSupertypes(filePath: string, position: LSPPosition): Promise<string[] | undefined> {

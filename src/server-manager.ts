@@ -51,7 +51,7 @@ export class ServerManager {
             case 'csharp':
                 return existsSync(join(serverDir, 'OmniSharp'));
             case 'haxe':
-                return existsSync(join(serverDir, 'node_modules', '@vshaxe', 'language-server'));
+                return existsSync(join(serverDir, 'server.js'));
             case 'typescript':
                 return existsSync(join(serverDir, 'node_modules', '.bin', 'typescript-language-server'));
             default:
