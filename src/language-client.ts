@@ -268,7 +268,7 @@ export class LanguageClient {
 
             // Extract ALL symbols, not just types
             const symbolInfo: SymbolInfo = {
-                name: symbol.name,
+                name: this.cleanSymbolName(symbol.name),
                 kind: this.getSymbolKindName(symbol.kind),
                 file: filePath,
                 range: {
@@ -636,6 +636,18 @@ export class LanguageClient {
             line: lspPosition.line,
             character: lspPosition.character
         };
+    }
+
+    private cleanSymbolName(name: string): string {
+        // For Java, strip generic type parameters from class/interface names
+        if (this.language === 'java') {
+            // Remove everything after the first < for type definitions
+            const genericIndex = name.indexOf('<');
+            if (genericIndex > 0) {
+                return name.substring(0, genericIndex);
+            }
+        }
+        return name;
     }
 
     private isTypeSymbol(symbol: DocumentSymbol): boolean {

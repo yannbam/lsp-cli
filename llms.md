@@ -108,7 +108,8 @@ lsp-cli <directory> <language> <output-file>
 - `variable`: Class variables
 - `enumMember`: Enum values
 
-**Note:** Type aliases (e.g., `type MyType = { x: number }`) are reported as "variable" kind by the TypeScript LSP server
+**Notes:**
+- Type aliases (e.g., `type MyType = { x: number }`) are reported as "variable" kind by the TypeScript LSP server
 
 ### C++
 **Top-level symbols:**
