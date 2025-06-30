@@ -482,13 +482,6 @@ export class LanguageClient {
         }
     }
 
-    private convertRange(lspRange: LSPRange): Range {
-        return {
-            start: this.convertPosition(lspRange.start),
-            end: this.convertPosition(lspRange.end)
-        };
-    }
-
     private convertPosition(lspPosition: LSPPosition): Position {
         return {
             line: lspPosition.line,
@@ -499,19 +492,6 @@ export class LanguageClient {
     private isTypeSymbol(symbol: DocumentSymbol): boolean {
         const typeKinds: SymbolKind[] = [SymbolKind.Class, SymbolKind.Interface, SymbolKind.Enum, SymbolKind.Struct];
         return typeKinds.includes(symbol.kind);
-    }
-
-    private isMemberSymbol(symbol: DocumentSymbol): boolean {
-        const memberKinds: SymbolKind[] = [
-            SymbolKind.Method,
-            SymbolKind.Function,
-            SymbolKind.Field,
-            SymbolKind.Property,
-            SymbolKind.Constructor,
-            SymbolKind.Constant,
-            SymbolKind.Variable
-        ];
-        return memberKinds.includes(symbol.kind);
     }
 
     private getSymbolKindName(kind: SymbolKind): string {
