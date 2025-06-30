@@ -2,6 +2,8 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import {
     createMessageConnection,
+    type DefinitionParams,
+    DefinitionRequest,
     DidOpenTextDocumentNotification,
     type DocumentSymbol,
     type DocumentSymbolParams,
@@ -9,6 +11,7 @@ import {
     ExitNotification,
     type InitializeParams,
     InitializeRequest,
+    type Location,
     type Position as LSPPosition,
     type Range as LSPRange,
     type MessageConnection,
@@ -19,10 +22,7 @@ import {
     type TextDocumentItem,
     type TypeHierarchyItem,
     TypeHierarchyPrepareRequest,
-    TypeHierarchySupertypesRequest,
-    DefinitionRequest,
-    type DefinitionParams,
-    type Location
+    TypeHierarchySupertypesRequest
 } from 'vscode-languageserver-protocol/node';
 import { ServerManager } from './server-manager';
 import type { Position, SupportedLanguage, SymbolInfo } from './types';
@@ -266,7 +266,7 @@ export class LanguageClient {
             const preview = lines[symbol.selectionRange.start.line]?.trim() || '';
             const isForwardDeclaration = preview.match(/^\s*(class|struct)\s+\w+\s*;\s*$/);
             const isFriendDeclaration = preview.includes('friend class') || preview.includes('friend struct');
-            
+
             // Skip forward declarations and friend declarations for C/C++
             if ((this.language === 'cpp' || this.language === 'c') && (isForwardDeclaration || isFriendDeclaration)) {
                 continue;
@@ -293,9 +293,11 @@ export class LanguageClient {
             };
 
             // For C/C++ header files, try to find the definition in .cpp files
-            if ((this.language === 'cpp' || this.language === 'c') && 
+            if (
+                (this.language === 'cpp' || this.language === 'c') &&
                 (filePath.endsWith('.h') || filePath.endsWith('.hpp')) &&
-                (symbol.kind === SymbolKind.Method || symbol.kind === SymbolKind.Function)) {
+                (symbol.kind === SymbolKind.Method || symbol.kind === SymbolKind.Function)
+            ) {
                 symbolInfo.definition = await this.getDefinition(filePath, symbol.selectionRange.start);
             }
 
@@ -313,7 +315,10 @@ export class LanguageClient {
         return lines.slice(previewStart, previewEnd);
     }
 
-    private async getDefinition(filePath: string, position: LSPPosition): Promise<SymbolInfo['definition'] | undefined> {
+    private async getDefinition(
+        filePath: string,
+        position: LSPPosition
+    ): Promise<SymbolInfo['definition'] | undefined> {
         if (!this.connection) {
             return undefined;
         }
@@ -327,24 +332,24 @@ export class LanguageClient {
             };
 
             const response = await this.connection.sendRequest(DefinitionRequest.type, params);
-            
+
             if (!response) {
                 return undefined;
             }
 
             // Response can be Location | Location[] | LocationLink[]
             const locations = Array.isArray(response) ? response : [response];
-            
+
             if (locations.length === 0) {
                 return undefined;
             }
 
             // Take the first location
             const location = locations[0] as Location;
-            
+
             // Convert file URI to path
             const definitionFile = location.uri.replace('file://', '');
-            
+
             // Skip if it's the same file (not a real definition, just the declaration)
             if (definitionFile === filePath) {
                 return undefined;
