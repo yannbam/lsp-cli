@@ -551,11 +551,11 @@ export class LanguageClient {
             if (toSkip.has(i)) continue;
 
             const current = symbols[i];
-            
+
             // Check if this is an anonymous struct/union/enum OR a named struct/union with a typedef
             if (i + 1 < symbols.length) {
                 const next = symbols[i + 1];
-                
+
                 // Check if the next symbol is within the range of the current struct/union
                 // and is on the same ending line (typical for typedef)
                 if (
@@ -568,7 +568,7 @@ export class LanguageClient {
                     // Merge: keep the struct definition with its children but skip the duplicate typedef
                     const merged: SymbolInfo = {
                         ...current,
-                        name: next.name, // Use typedef name for anonymous structs
+                        name: next.name // Use typedef name for anonymous structs
                         // Keep the struct's full range and children
                     };
                     result.push(merged);
@@ -576,12 +576,12 @@ export class LanguageClient {
                     continue;
                 }
             }
-            
+
             // If this symbol has children, recursively process them
             if (current.children) {
                 current.children = this.mergeAnonymousStructsWithTypedefs(current.children);
             }
-            
+
             result.push(current);
         }
 

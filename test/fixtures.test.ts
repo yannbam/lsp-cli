@@ -356,12 +356,12 @@ describe('Fixture-based LSP Tests', () => {
             const result = readOutput(outputFile);
 
             const allSymbols = flattenSymbols(result.symbols);
-            
+
             // Check that anonymous structs are properly merged
             // Note: There's one legitimate anonymous struct - the nested version struct in DataStructureInfo
             const anonymousStructs = allSymbols.filter((s) => s.name.includes('(anonymous struct)'));
             expect(anonymousStructs.length).toBe(1); // Only the nested version struct should remain
-            
+
             // Verify it's the nested struct with version fields
             const nestedStruct = anonymousStructs[0];
             expect(nestedStruct.children).toBeDefined();
@@ -369,11 +369,11 @@ describe('Fixture-based LSP Tests', () => {
             expect(versionFields.some((f) => f.name === 'major')).toBe(true);
             expect(versionFields.some((f) => f.name === 'minor')).toBe(true);
             expect(versionFields.some((f) => f.name === 'patch')).toBe(true);
-            
+
             // Check that anonymous unions are properly merged
             const anonymousUnions = allSymbols.filter((s) => s.name.includes('(anonymous union)'));
             expect(anonymousUnions.length).toBe(0); // All should be merged
-            
+
             // Check for DataValue union (was anonymous)
             const dataValue = allSymbols.find((s) => s.name === 'DataValue' && s.kind === 'class');
             expect(dataValue).toBeDefined();
@@ -383,14 +383,14 @@ describe('Fixture-based LSP Tests', () => {
             expect(unionFields.some((f) => f.name === 'float_value')).toBe(true);
             expect(unionFields.some((f) => f.name === 'string_value')).toBe(true);
             expect(unionFields.some((f) => f.name === 'ptr_value')).toBe(true);
-            
+
             // Check that named typedefs don't have duplicates
             const listNodes = allSymbols.filter((s) => s.name === 'ListNode' && s.kind === 'class');
             expect(listNodes.length).toBe(1); // Should only have one ListNode
-            
+
             const hashEntries = allSymbols.filter((s) => s.name === 'HashEntry' && s.kind === 'class');
             expect(hashEntries.length).toBe(1); // Should only have one HashEntry
-            
+
             // Verify ListNode has its fields
             const listNode = listNodes[0];
             expect(listNode.children).toBeDefined();

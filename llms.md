@@ -146,6 +146,7 @@ lsp-cli <directory> <language> <output-file>
 - The clangd LSP server represents all C structs as "class" kind, including anonymous structs and typedef structs
 - Mixed C/C++ projects may show C++ symbols like `namespace` from included headers
 - Macro invocations may appear as `string` kind (LSP server quirk)
+- Typedef patterns like `typedef struct { ... } Name;` and `typedef struct Name { ... } Name;` are automatically merged to avoid duplicates
 
 ### C#
 **Note:** C# is current broken
