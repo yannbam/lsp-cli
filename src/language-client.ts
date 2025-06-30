@@ -19,7 +19,10 @@ import {
     type TextDocumentItem,
     type TypeHierarchyItem,
     TypeHierarchyPrepareRequest,
-    TypeHierarchySupertypesRequest
+    TypeHierarchySupertypesRequest,
+    DefinitionRequest,
+    type DefinitionParams,
+    type Location
 } from 'vscode-languageserver-protocol/node';
 import { ServerManager } from './server-manager';
 import type { Position, SupportedLanguage, SymbolInfo } from './types';
@@ -236,11 +239,16 @@ export class LanguageClient {
 
         // Debug logging for C#
         if (this.language === 'csharp') {
-            console.log(`[DEBUG] Document symbols response for ${filePath}:`, 
-                symbols === null ? 'null' : 
-                symbols === undefined ? 'undefined' : 
-                Array.isArray(symbols) ? `array of ${symbols.length}` : 
-                typeof symbols);
+            console.log(
+                `[DEBUG] Document symbols response for ${filePath}:`,
+                symbols === null
+                    ? 'null'
+                    : symbols === undefined
+                      ? 'undefined'
+                      : Array.isArray(symbols)
+                        ? `array of ${symbols.length}`
+                        : typeof symbols
+            );
         }
 
         if (!symbols || (Array.isArray(symbols) && symbols.length === 0)) {
@@ -254,6 +262,16 @@ export class LanguageClient {
         const allSymbols: SymbolInfo[] = [];
 
         for (const symbol of symbols) {
+            // For C/C++, check if this is a forward declaration or friend declaration
+            const preview = lines[symbol.selectionRange.start.line]?.trim() || '';
+            const isForwardDeclaration = preview.match(/^\s*(class|struct)\s+\w+\s*;\s*$/);
+            const isFriendDeclaration = preview.includes('friend class') || preview.includes('friend struct');
+            
+            // Skip forward declarations and friend declarations for C/C++
+            if ((this.language === 'cpp' || this.language === 'c') && (isForwardDeclaration || isFriendDeclaration)) {
+                continue;
+            }
+
             // Extract ALL symbols, not just types
             const symbolInfo: SymbolInfo = {
                 name: symbol.name,
@@ -266,13 +284,21 @@ export class LanguageClient {
                     },
                     end: this.convertPosition(symbol.range.end)
                 },
-                preview: lines[symbol.selectionRange.start.line]?.trim() || '',
+                preview,
                 documentation: this.extractDocumentation(lines, symbol.selectionRange.start.line),
                 supertypes: this.isTypeSymbol(symbol)
                     ? await this.getSupertypes(filePath, symbol.selectionRange.start)
                     : undefined,
                 children: symbol.children ? await this.extractSymbols(symbol.children, filePath, lines) : undefined
             };
+
+            // For C/C++ header files, try to find the definition in .cpp files
+            if ((this.language === 'cpp' || this.language === 'c') && 
+                (filePath.endsWith('.h') || filePath.endsWith('.hpp')) &&
+                (symbol.kind === SymbolKind.Method || symbol.kind === SymbolKind.Function)) {
+                symbolInfo.definition = await this.getDefinition(filePath, symbol.selectionRange.start);
+            }
+
             allSymbols.push(symbolInfo);
         }
 
@@ -285,6 +311,75 @@ export class LanguageClient {
         const previewEnd = Math.min(lines.length, startLine + 3);
 
         return lines.slice(previewStart, previewEnd);
+    }
+
+    private async getDefinition(filePath: string, position: LSPPosition): Promise<SymbolInfo['definition'] | undefined> {
+        if (!this.connection) {
+            return undefined;
+        }
+
+        try {
+            const params: DefinitionParams = {
+                textDocument: {
+                    uri: `file://${filePath}`
+                },
+                position
+            };
+
+            const response = await this.connection.sendRequest(DefinitionRequest.type, params);
+            
+            if (!response) {
+                return undefined;
+            }
+
+            // Response can be Location | Location[] | LocationLink[]
+            const locations = Array.isArray(response) ? response : [response];
+            
+            if (locations.length === 0) {
+                return undefined;
+            }
+
+            // Take the first location
+            const location = locations[0] as Location;
+            
+            // Convert file URI to path
+            const definitionFile = location.uri.replace('file://', '');
+            
+            // Skip if it's the same file (not a real definition, just the declaration)
+            if (definitionFile === filePath) {
+                return undefined;
+            }
+
+            // Read the definition file to get preview
+            try {
+                const content = readFileSync(definitionFile, 'utf-8');
+                const lines = content.split('\n');
+                const preview = lines[location.range.start.line]?.trim();
+
+                return {
+                    file: definitionFile,
+                    range: {
+                        start: this.convertPosition(location.range.start),
+                        end: this.convertPosition(location.range.end)
+                    },
+                    preview
+                };
+            } catch (error) {
+                // If we can't read the file, still return the location without preview
+                return {
+                    file: definitionFile,
+                    range: {
+                        start: this.convertPosition(location.range.start),
+                        end: this.convertPosition(location.range.end)
+                    }
+                };
+            }
+        } catch (error) {
+            if (this.verbose) {
+                console.log(`Failed to get definition: ${error}`);
+            }
+            return undefined;
+        }
     }
 
     private extractDocumentation(lines: string[], symbolStartLine: number): string | undefined {

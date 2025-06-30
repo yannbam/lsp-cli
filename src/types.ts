@@ -19,6 +19,11 @@ export interface SymbolInfo {
     documentation?: string;
     supertypes?: string[];
     children?: SymbolInfo[];
+    definition?: {
+        file: string;
+        range: Range;
+        preview?: string;
+    };
 }
 
 export interface ToolchainCheckResult {
