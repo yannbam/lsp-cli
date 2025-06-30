@@ -24,6 +24,7 @@ import {
     TypeHierarchyPrepareRequest,
     TypeHierarchySupertypesRequest
 } from 'vscode-languageserver-protocol/node';
+import type { Logger } from './logger';
 import { ServerManager } from './server-manager';
 import type { Position, SupportedLanguage, SymbolInfo } from './types';
 import { getAllFiles } from './utils';
@@ -39,9 +40,9 @@ export class LanguageClient {
         private language: SupportedLanguage,
         private serverPath: string,
         private workspaceRoot: string,
-        private verbose: boolean = false
+        private logger: Logger
     ) {
-        this.serverManager = new ServerManager();
+        this.serverManager = new ServerManager(logger);
     }
 
     async start(): Promise<void> {
@@ -60,12 +61,12 @@ export class LanguageClient {
         });
 
         this.serverProcess.on('error', (err) => {
-            console.error('Failed to spawn process:', err);
+            this.logger.error('Failed to spawn process', err.message);
         });
 
         this.serverProcess.on('exit', (code, signal) => {
             if (code !== 0 && code !== null && code !== 143) {
-                console.error(`LSP server exited unexpectedly with code ${code} and signal ${signal}`);
+                this.logger.error(`LSP server exited unexpectedly`, `code ${code}, signal ${signal}`);
             }
         });
 
@@ -77,7 +78,7 @@ export class LanguageClient {
         this.serverProcess.stderr?.on('data', (data) => {
             const message = data.toString().trim();
             if (message) {
-                console.error(`[LSP stderr]: ${message}`);
+                this.logger.debug(`[LSP stderr]: ${message}`);
             }
         });
 
@@ -88,11 +89,11 @@ export class LanguageClient {
 
         // Handle connection errors
         this.connection.onError((error) => {
-            console.error('LSP connection error:', error);
+            this.logger.error('LSP connection error', String(error));
         });
 
         this.connection.onClose(() => {
-            console.log('LSP connection closed, exiting');
+            this.logger.info('LSP connection closed');
             process.exit(0);
         });
 
@@ -103,7 +104,10 @@ export class LanguageClient {
         try {
             await this.initialize();
         } catch (error) {
-            console.error('Failed to initialize LSP server:', error);
+            this.logger.error(
+                'Failed to initialize LSP server',
+                error instanceof Error ? error.message : String(error)
+            );
             throw error;
         }
     }
@@ -135,9 +139,7 @@ export class LanguageClient {
         const result = await this.connection.sendRequest(InitializeRequest.type, initParams);
         this.serverCapabilities = result.capabilities;
 
-        if (this.verbose) {
-            console.log('Server capabilities:', JSON.stringify(result.capabilities, null, 2));
-        }
+        this.logger.debug(`Server capabilities: ${JSON.stringify(result.capabilities, null, 2)}`);
 
         await this.connection.sendNotification('initialized', {});
 
@@ -156,9 +158,7 @@ export class LanguageClient {
                 await this.connection.sendRequest(ShutdownRequest.type);
                 await this.connection.sendNotification(ExitNotification.type);
             } catch (error) {
-                if (this.verbose) {
-                    console.error('Error during shutdown:', error);
-                }
+                this.logger.debug(`Error during shutdown: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
 
@@ -175,27 +175,26 @@ export class LanguageClient {
         const symbols: SymbolInfo[] = [];
         const files = this.getSourceFiles();
 
-        console.log(`Found ${files.length} ${this.language} files to analyze`);
+        this.logger.info(`Found ${files.length} ${this.language} files to analyze`);
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const progress = Math.round(((i + 1) / files.length) * 100);
 
-            if (this.verbose) {
-                console.log(`[${i + 1}/${files.length}] Analyzing: ${file}`);
-            } else if (i % 10 === 0 || i === files.length - 1) {
-                console.log(`Progress: ${progress}% (${i + 1}/${files.length} files)`);
-            }
+            this.logger.file(file, 'analyzing');
+            this.logger.progress(i + 1, files.length);
 
             try {
                 const fileSymbols = await this.analyzeFile(file);
                 symbols.push(...fileSymbols);
+                this.logger.file(file, 'done');
             } catch (error) {
-                console.error(`Error analyzing ${file}:`, error);
+                this.logger.file(file, 'error');
+                this.logger.error(`Error analyzing ${file}`, error instanceof Error ? error.message : String(error));
             }
         }
 
-        console.log(`Analysis complete: found ${symbols.length} symbols`);
+        this.logger.clearLine();
+        this.logger.success(`Analysis complete: found ${symbols.length} symbols`);
         return symbols;
     }
 
@@ -381,9 +380,7 @@ export class LanguageClient {
                 };
             }
         } catch (error) {
-            if (this.verbose) {
-                console.log(`Failed to get definition: ${error}`);
-            }
+            this.logger.debug(`Failed to get definition: ${error}`);
             return undefined;
         }
     }
@@ -392,9 +389,7 @@ export class LanguageClient {
         if (symbolStartLine <= 0) return undefined;
 
         let currentLine = symbolStartLine - 1;
-        if (this.verbose) {
-            console.log(`Extracting documentation for symbol at line ${symbolStartLine}`);
-        }
+        this.logger.debug(`Extracting documentation for symbol at line ${symbolStartLine}`);
 
         // Scan upwards, skipping empty lines and annotations
         while (currentLine >= 0) {
@@ -587,9 +582,7 @@ export class LanguageClient {
             // Extract just the names
             return supertypes.map((item) => item.name);
         } catch (error) {
-            if (this.verbose) {
-                console.error('Error getting supertypes:', error);
-            }
+            this.logger.debug(`Error getting supertypes: ${error}`);
             return undefined;
         }
     }

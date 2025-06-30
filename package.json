@@ -18,6 +18,7 @@
         "prepare": "husky"
     },
     "dependencies": {
+        "chalk": "^5.4.1",
         "commander": "^11.0.0",
         "tar": "^6.2.0",
         "unzipper": "^0.10.0",

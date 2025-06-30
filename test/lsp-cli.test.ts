@@ -75,7 +75,7 @@ describe('LSP CLI Tests', () => {
             expect(existsSync(outputFile)).toBe(true);
         });
 
-        it.skip('should install Haxe language server', () => {
+        it('should install Haxe language server', () => {
             const outputFile = 'test-haxe.json';
             const projectPath = getTestProjectPath('haxe');
 

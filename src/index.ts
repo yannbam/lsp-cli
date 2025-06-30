@@ -2,14 +2,16 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Command } from 'commander';
 import { LanguageClient } from './language-client';
+import { Logger } from './logger';
 import { ServerManager } from './server-manager';
 import type { SupportedLanguage } from './types';
 import { checkProjectFiles, checkToolchain } from './utils';
 
 const program = new Command();
 
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+process.on('unhandledRejection', (reason, _promise) => {
+    const logger = new Logger();
+    logger.error('Unhandled Rejection', `${reason}`);
     process.exit(1);
 });
 
@@ -22,18 +24,22 @@ program
     .argument('<output-file>', 'Output file')
     .option('-v, --verbose', 'Enable verbose logging')
     .action(async (directory: string, language: string, outputFile: string, options: { verbose?: boolean }) => {
+        const logger = new Logger({ verbose: options.verbose });
+
         try {
             const dir = resolve(directory);
 
             if (!existsSync(dir)) {
-                console.error(`Error: Directory '${dir}' does not exist`);
+                logger.error(`Directory '${dir}' does not exist`);
                 process.exit(1);
             }
 
             const supportedLanguages: SupportedLanguage[] = ['java', 'cpp', 'c', 'csharp', 'haxe', 'typescript'];
             if (!supportedLanguages.includes(language as SupportedLanguage)) {
-                console.error(`Error: Unsupported language '${language}'`);
-                console.error(`Supported languages: ${supportedLanguages.join(', ')}`);
+                logger.error(
+                    `Unsupported language '${language}'`,
+                    `Supported languages: ${supportedLanguages.join(', ')}`
+                );
                 process.exit(1);
             }
 
@@ -42,28 +48,27 @@ program
             // Check toolchain
             const toolchainResult = await checkToolchain(lang);
             if (!toolchainResult.installed) {
-                console.error(`Error: Required toolchain not found for ${lang}`);
-                console.error(toolchainResult.message);
+                logger.error(`Required toolchain not found for ${lang}`, toolchainResult.message);
                 process.exit(1);
             }
 
             // Check project files
             const projectFileResult = await checkProjectFiles(dir, lang);
             if (!projectFileResult.found) {
-                console.warn(`Warning: No project configuration found for ${lang}`);
-                console.warn(projectFileResult.message);
-                console.warn('Results may be incomplete or inaccurate');
+                logger.warn(`No project configuration found for ${lang}`);
+                logger.warn(projectFileResult.message);
+                logger.warn('Results may be incomplete or inaccurate');
             }
 
             // Install/check LSP server
-            const serverManager = new ServerManager();
-            console.log(`Checking LSP server for ${lang}...`);
+            const serverManager = new ServerManager(logger);
+            logger.serverStatus(lang, 'checking');
             const serverPath = await serverManager.ensureServer(lang);
-            console.log(`LSP server ready at: ${serverPath}`);
+            logger.serverStatus(lang, 'ready', serverPath);
 
             // Start LSP client and analyze
-            const client = new LanguageClient(lang, serverPath, dir, options.verbose);
-            console.log(`Analyzing ${dir}...`);
+            const client = new LanguageClient(lang, serverPath, dir, logger);
+            logger.section(`Analyzing ${dir}`);
 
             await client.start();
             const symbols = await client.analyzeDirectory();
@@ -78,12 +83,21 @@ program
 
             const jsonOutput = JSON.stringify(output, null, 2);
 
-            console.log(`Writing output to: ${outputFile}`);
+            logger.info(`Writing output to: ${outputFile}`);
             writeFileSync(outputFile, jsonOutput);
-            console.log(`Output written to: ${outputFile} (${jsonOutput.length} bytes)`);
+
+            logger.success(`Analysis complete!`);
+            logger.summary('Results', [
+                { label: 'Language', value: lang, color: 'blue' },
+                { label: 'Symbols found', value: symbols.length, color: 'green' },
+                { label: 'Output file', value: outputFile },
+                { label: 'File size', value: `${(jsonOutput.length / 1024).toFixed(1)} KB` }
+            ]);
         } catch (error) {
-            console.error('Error:', error);
-            console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+            logger.error('Analysis failed', error instanceof Error ? error.message : String(error));
+            if (options.verbose && error instanceof Error && error.stack) {
+                logger.debug(error.stack);
+            }
             process.exit(1);
         }
     });

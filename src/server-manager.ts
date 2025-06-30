@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
+import type { Logger } from './logger';
 import type { ServerConfig, SupportedLanguage } from './types';
 import { downloadFile, extractArchive } from './utils';
 
@@ -11,7 +12,7 @@ const execAsync = promisify(exec);
 export class ServerManager {
     private baseDir: string;
 
-    constructor() {
+    constructor(private logger?: Logger) {
         this.baseDir = join(homedir(), '.lsp-cli', 'servers');
         mkdirSync(this.baseDir, { recursive: true });
     }
@@ -24,7 +25,7 @@ export class ServerManager {
             return serverDir;
         }
 
-        console.log(`Installing ${language} LSP server...`);
+        this.logger?.serverStatus(language, 'installing');
         mkdirSync(serverDir, { recursive: true });
 
         if (config.installScript) {
@@ -111,7 +112,7 @@ export class ServerManager {
                     downloadUrl: '',
                     command: ['haxe-language-server'],
                     installScript: async (targetDir: string) => {
-                        console.log('Building Haxe language server from source...');
+                        this.logger?.info('Building Haxe language server from source...');
 
                         const buildDir = join(targetDir, 'haxe-language-server');
 
