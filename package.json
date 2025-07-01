@@ -1,6 +1,6 @@
 {
     "name": "@mariozechner/lsp-cli",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "CLI tool to extract types from codebases using LSP servers",
     "main": "dist/index.js",
     "bin": {
