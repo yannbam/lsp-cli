@@ -1,15 +1,15 @@
 import { exec } from 'node:child_process';
-import { createReadStream, createWriteStream, existsSync, readdirSync, statSync } from 'node:fs';
+import { createWriteStream, existsSync, readdirSync, statSync } from 'node:fs';
 import { get } from 'node:https';
 import { extname, join } from 'node:path';
-import { pipeline } from 'node:stream';
-import { promisify, promisify as promisifyPipeline } from 'node:util';
+import { promisify } from 'node:util';
 import * as tar from 'tar';
-import { Extract } from 'unzipper';
+
+const StreamZip = require('node-stream-zip');
+
 import type { ProjectFileCheckResult, SupportedLanguage, ToolchainCheckResult } from './types';
 
 const execAsync = promisify(exec);
-const pipelineAsync = promisifyPipeline(pipeline);
 
 export async function checkToolchain(language: SupportedLanguage): Promise<ToolchainCheckResult> {
     const platform = process.platform;
@@ -191,7 +191,9 @@ export async function extractArchive(archivePath: string, destination: string): 
     const ext = extname(archivePath).toLowerCase();
 
     if (ext === '.zip') {
-        await pipelineAsync(createReadStream(archivePath), Extract({ path: destination }));
+        const zip = new StreamZip.async({ file: archivePath });
+        await zip.extract(null, destination);
+        await zip.close();
     } else if (ext === '.gz' || ext === '.tgz') {
         await tar.extract({
             file: archivePath,
