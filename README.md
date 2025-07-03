@@ -29,7 +29,7 @@ lsp-cli <directory> <language> <output-file>
 
 ### Options
 - `-v, --verbose` - Enable verbose logging
-- `--llm` - Copy llms.md documentation to current directory (for LLM consumption)
+- `--llm` - Print llms.md documentation to stdout (for LLM consumption)
 
 ### Supported Languages
 - `java` - Java (requires JDK)
@@ -49,7 +49,7 @@ npx tsx src/index.ts /path/to/java/project java types.json
 # With verbose logging
 npx tsx src/index.ts /path/to/java/project java types.json -v
 
-# Copy LLM documentation to current directory
+# Print LLM documentation to stdout
 lsp-cli --llm
 ```
 
@@ -65,27 +65,61 @@ The tool outputs JSON with all symbols found in the codebase:
     {
       "name": "MyClass",
       "kind": "class",
-      "file": "src/MyClass.java",
+      "file": "/path/to/project/src/MyClass.java",
       "range": {
         "start": { "line": 10, "character": 0 },
         "end": { "line": 25, "character": 1 }
       },
-      "preview": [
-        "// Preview lines around the type definition"
-      ],
-      "members": [
+      "preview": "public class MyClass {",
+      "documentation": "Class documentation from JavaDoc",
+      "supertypes": ["BaseClass", "MyInterface"],
+      "children": [
         {
           "name": "myMethod",
           "kind": "method",
-          "range": { ... },
-          "preview": [ ... ],
-          "children": [ ... ]
+          "range": {
+            "start": { "line": 12, "character": 4 },
+            "end": { "line": 15, "character": 5 }
+          },
+          "preview": [
+            "public String myMethod(int param) {",
+            "    // Method implementation",
+            "    return result;",
+            "}"
+          ]
+        },
+        {
+          "name": "InnerClass",
+          "kind": "class",
+          "range": {
+            "start": { "line": 17, "character": 4 },
+            "end": { "line": 22, "character": 5 }
+          },
+          "preview": "public static class InnerClass {",
+          "children": [
+            {
+              "name": "innerField",
+              "kind": "field",
+              "range": {
+                "start": { "line": 18, "character": 8 },
+                "end": { "line": 18, "character": 30 }
+              },
+              "preview": "private String innerField;"
+            }
+          ]
         }
       ]
     }
   ]
 }
 ```
+
+**Note:** The actual structure includes:
+- `preview`: Can be a single string or array of strings
+- `children`: Nested symbols (methods, fields, etc.) instead of `members`
+- `supertypes`: Parent classes/interfaces (optional)
+- `documentation`: JSDoc/JavaDoc comments (optional)
+- `definition`: For C/C++ declarations, links to implementation (optional)
 
 ## Requirements
 

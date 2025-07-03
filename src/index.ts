@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { Command } from 'commander';
 import { LanguageClient } from './language-client';
@@ -19,7 +19,7 @@ program
     .name('lsp-cli')
     .description('Extract type information from codebases using LSP servers')
     .version('1.0.0')
-    .option('--llm', 'Copy llms.md documentation to current directory')
+    .option('--llm', 'Print llms.md documentation to stdout')
     .argument('[directory]', 'Directory to analyze')
     .argument('[language]', 'Language (java, cpp, c, csharp, haxe, typescript)')
     .argument('[output-file]', 'Output file')
@@ -39,23 +39,18 @@ program
                     const scriptPath = require.resolve(process.argv[1]);
                     const scriptDir = dirname(scriptPath);
                     const sourcePath = join(scriptDir, 'llms.md');
-                    const destPath = join(process.cwd(), 'llms.md');
 
                     if (!existsSync(sourcePath)) {
                         logger.error('Could not find llms.md in distribution');
                         process.exit(1);
                     }
 
-                    if (existsSync(destPath)) {
-                        logger.warn('llms.md already exists in current directory');
-                        process.exit(1);
-                    }
-
-                    copyFileSync(sourcePath, destPath);
-                    logger.success('Copied llms.md to current directory');
+                    // Read and output the file contents to stdout
+                    const content = readFileSync(sourcePath, 'utf8');
+                    console.log(content);
                     process.exit(0);
                 } catch (error) {
-                    logger.error('Failed to copy llms.md', error instanceof Error ? error.message : String(error));
+                    logger.error('Failed to read llms.md', error instanceof Error ? error.message : String(error));
                     process.exit(1);
                 }
             }
