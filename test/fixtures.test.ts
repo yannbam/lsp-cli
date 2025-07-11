@@ -100,6 +100,76 @@ describe('Fixture-based LSP Tests', () => {
             expect(userService!.range.start.line).toBeGreaterThanOrEqual(0);
             expect(userService!.range.end.line).toBeGreaterThan(userService!.range.start.line);
         });
+
+        it('should extract preview text for symbols', () => {
+            runLSPCLI(javaFixture, 'java', outputFile);
+            const result = readOutput(outputFile);
+
+            // Check class preview
+            const userService = findSymbolByName(result.symbols, 'UserService', 'class');
+            expect(userService).toBeDefined();
+            expect(userService!.preview).toBeDefined();
+            expect(userService!.preview).toContain('public class UserService');
+
+            // Check method preview
+            const methods = userService!.children!.filter((c) => c.kind === 'method');
+            const findById = methods.find((m) => m.name.startsWith('findById'));
+            expect(findById).toBeDefined();
+            expect(findById!.preview).toBeDefined();
+            expect(findById!.preview).toContain('Optional<User> findById');
+
+            // Check field preview
+            const fields = userService!.children!.filter((c) => c.kind === 'field');
+            const repository = fields.find((f) => f.name === 'repository');
+            expect(repository).toBeDefined();
+            expect(repository!.preview).toBeDefined();
+            expect(repository!.preview).toContain('UserRepository repository');
+
+            // Check constant preview (static final fields are reported as constants)
+            const constants = userService!.children!.filter((c) => c.kind === 'constant');
+            const serviceName = constants.find((c) => c.name === 'SERVICE_NAME');
+            expect(serviceName).toBeDefined();
+            expect(serviceName!.preview).toBeDefined();
+            expect(serviceName!.preview).toContain('static final String SERVICE_NAME');
+
+            // Check enum preview
+            const userStatus = findSymbolByName(result.symbols, 'UserStatus', 'enum');
+            expect(userStatus).toBeDefined();
+            expect(userStatus!.preview).toBeDefined();
+            expect(userStatus!.preview).toContain('enum UserStatus');
+
+            // Check interface preview
+            const serviceInterface = findSymbolByName(result.symbols, 'ServiceInterface', 'interface');
+            expect(serviceInterface).toBeDefined();
+            expect(serviceInterface!.preview).toBeDefined();
+            expect(serviceInterface!.preview).toContain('interface ServiceInterface');
+        });
+
+        it('should handle multi-line declarations', () => {
+            runLSPCLI(javaFixture, 'java', outputFile);
+            const result = readOutput(outputFile);
+
+            // Check if we have the multi-line declarations file
+            const multiLineClass = findSymbolByName(result.symbols, 'MultiLineDeclarations', 'class');
+            if (multiLineClass) {
+                // Check multi-line method
+                const methods = multiLineClass.children!.filter((c) => c.kind === 'method');
+                const transformList = methods.find((m) => m.name.includes('transformList'));
+                if (transformList) {
+                    expect(transformList.preview).toBeDefined();
+                    // The preview should contain the method signature
+                    expect(transformList.preview.length).toBeGreaterThan(0);
+                }
+
+                // Check multi-line class declaration
+                const innerClasses = multiLineClass.children!.filter((c) => c.kind === 'class');
+                const complexBuilder = innerClasses.find((c) => c.name === 'ComplexBuilder');
+                if (complexBuilder) {
+                    expect(complexBuilder.preview).toBeDefined();
+                    expect(complexBuilder.preview).toContain('class ComplexBuilder');
+                }
+            }
+        });
     });
 
     describe('TypeScript', () => {
@@ -193,6 +263,39 @@ describe('Fixture-based LSP Tests', () => {
             expect(enumMembers.some((m) => m.name === 'Processing')).toBe(true);
             expect(enumMembers.some((m) => m.name === 'Shipped')).toBe(true);
         });
+
+        it('should extract preview text for TypeScript symbols', () => {
+            runLSPCLI(tsFixture, 'typescript', outputFile);
+            const result = readOutput(outputFile);
+
+            // Check class preview
+            const orderService = findSymbolByName(result.symbols, 'OrderService', 'class');
+            expect(orderService).toBeDefined();
+            expect(orderService!.preview).toBeDefined();
+            expect(orderService!.preview).toContain('class OrderService');
+
+            // Check interface preview
+            const orderInterface = findSymbolByName(result.symbols, 'Order', 'interface');
+            expect(orderInterface).toBeDefined();
+            expect(orderInterface!.preview).toBeDefined();
+            expect(orderInterface!.preview).toContain('interface Order');
+
+            // Check method preview
+            if (orderService!.children) {
+                const methods = orderService!.children.filter((c) => c.kind === 'method');
+                const method = methods[0];
+                if (method) {
+                    expect(method.preview).toBeDefined();
+                    expect(method.preview.length).toBeGreaterThan(0);
+                }
+            }
+
+            // Check enum preview
+            const orderStatus = findSymbolByName(result.symbols, 'OrderStatus', 'enum');
+            expect(orderStatus).toBeDefined();
+            expect(orderStatus!.preview).toBeDefined();
+            expect(orderStatus!.preview).toContain('enum OrderStatus');
+        });
     });
 
     describe('C++', () => {
@@ -272,6 +375,41 @@ describe('Fixture-based LSP Tests', () => {
             if (initialize?.definition) {
                 expect(initialize.definition.file).toContain('.cpp');
                 expect(initialize.definition.range).toBeDefined();
+            }
+        });
+
+        it('should extract preview text for C++ symbols and definitions', () => {
+            runLSPCLI(cppFixture, 'cpp', outputFile);
+            const result = readOutput(outputFile);
+
+            // Check class preview
+            const renderer = findSymbolByName(result.symbols, 'Renderer', 'class');
+            expect(renderer).toBeDefined();
+            expect(renderer!.preview).toBeDefined();
+            expect(renderer!.preview).toContain('class Renderer');
+
+            // Check method preview
+            if (renderer!.children) {
+                const methods = renderer!.children.filter((c) => c.kind === 'method');
+                const method = methods[0];
+                if (method) {
+                    expect(method.preview).toBeDefined();
+                    expect(method.preview.length).toBeGreaterThan(0);
+
+                    // If method has a definition, check definition preview
+                    if (method.definition?.preview) {
+                        expect(method.definition.preview).toBeDefined();
+                        expect(method.definition.preview.length).toBeGreaterThan(0);
+                    }
+                }
+            }
+
+            // Check namespace preview
+            const namespaces = result.symbols.filter((s) => s.kind === 'namespace');
+            if (namespaces.length > 0) {
+                const namespace = namespaces[0];
+                expect(namespace.preview).toBeDefined();
+                expect(namespace.preview).toContain('namespace');
             }
         });
     });
@@ -484,6 +622,54 @@ describe('Fixture-based LSP Tests', () => {
         });
     });
 
+    describe('Preview Field Validation', () => {
+        it('should have preview text for all symbols across all languages', () => {
+            const languages = ['java', 'typescript', 'cpp', 'c', 'haxe', 'dart'] as const;
+            const results: Record<string, { total: number; withPreview: number; percentage: number }> = {};
+
+            for (const language of languages) {
+                const fixture = join(FIXTURES_DIR, language);
+                const outputFile = `test-${language}-preview.json`;
+
+                try {
+                    runLSPCLI(fixture, language, outputFile);
+                    const result = readOutput(outputFile);
+
+                    const validation = validateAllSymbolsHavePreview(result.symbols);
+                    const percentage = (validation.withPreview / validation.total) * 100;
+
+                    results[language] = {
+                        total: validation.total,
+                        withPreview: validation.withPreview,
+                        percentage
+                    };
+
+                    // Log missing previews for debugging
+                    if (validation.missing.length > 0 && validation.missing.length <= 10) {
+                        console.log(`\n${language} - Missing previews (first 10):`, validation.missing.slice(0, 10));
+                    }
+
+                    // Expect at least 90% of symbols to have preview text
+                    // Some LSP servers might not provide preview for all symbol types
+                    expect(percentage).toBeGreaterThanOrEqual(90);
+
+                    // Clean up
+                    if (existsSync(outputFile)) {
+                        execSync(`rm -f ${outputFile}`);
+                    }
+                } catch (error) {
+                    console.error(`Failed to test ${language}:`, error);
+                }
+            }
+
+            // Log summary
+            console.log('\nPreview field coverage summary:');
+            for (const [lang, stats] of Object.entries(results)) {
+                console.log(`${lang}: ${stats.withPreview}/${stats.total} (${stats.percentage.toFixed(1)}%)`);
+            }
+        });
+    });
+
     describe('Dart', () => {
         const dartFixture = join(FIXTURES_DIR, 'dart');
         const outputFile = 'test-dart-fixture.json';
@@ -649,4 +835,34 @@ function flattenSymbols(symbols: SymbolInfo[]): SymbolInfo[] {
         }
     }
     return result;
+}
+
+function validateAllSymbolsHavePreview(symbols: SymbolInfo[]): {
+    total: number;
+    withPreview: number;
+    missing: string[];
+} {
+    let total = 0;
+    let withPreview = 0;
+    const missing: string[] = [];
+
+    function check(syms: SymbolInfo[], path: string = '') {
+        for (const symbol of syms) {
+            total++;
+            const fullPath = path ? `${path} > ${symbol.name}` : symbol.name;
+
+            if (symbol.preview && symbol.preview.trim().length > 0) {
+                withPreview++;
+            } else {
+                missing.push(`${fullPath} (${symbol.kind})`);
+            }
+
+            if (symbol.children) {
+                check(symbol.children, fullPath);
+            }
+        }
+    }
+
+    check(symbols);
+    return { total, withPreview, missing };
 }

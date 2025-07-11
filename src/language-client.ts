@@ -256,8 +256,38 @@ export class LanguageClient {
         const allSymbols: SymbolInfo[] = [];
 
         for (const symbol of symbols) {
+            // Extract preview - for multi-line declarations, get all lines
+            let preview = '';
+
+            // For type symbols, we want to capture the full declaration including extends/implements
+            if (this.isTypeSymbol(symbol)) {
+                const startLine = symbol.selectionRange.start.line;
+                const previewLines = [];
+                let braceFound = false;
+
+                // Start from the declaration line and continue until we find the opening brace
+                for (let i = startLine; i < lines.length && !braceFound; i++) {
+                    const line = lines[i].trim();
+                    if (line) {
+                        // Check if this line contains the opening brace
+                        const braceIndex = line.indexOf('{');
+                        if (braceIndex >= 0) {
+                            // Include everything up to the brace
+                            previewLines.push(line.substring(0, braceIndex).trim());
+                            braceFound = true;
+                        } else {
+                            previewLines.push(line);
+                        }
+                    }
+                }
+
+                preview = previewLines.filter((l) => l).join(' ');
+            } else {
+                // For non-type symbols, just use the selection line
+                preview = lines[symbol.selectionRange.start.line]?.trim() || '';
+            }
+
             // For C/C++, check if this is a forward declaration or friend declaration
-            const preview = lines[symbol.selectionRange.start.line]?.trim() || '';
             const isForwardDeclaration = preview.match(/^\s*(class|struct)\s+\w+\s*;\s*$/);
             const isFriendDeclaration = preview.includes('friend class') || preview.includes('friend struct');
 
