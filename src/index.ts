@@ -18,7 +18,7 @@ process.on('unhandledRejection', (reason, _promise) => {
 program
     .name('lsp-cli')
     .description('Extract type information from codebases using LSP servers')
-    .version('1.0.0')
+    .version('0.1.0')
     .option('--llm', 'Print llms.md documentation to stdout')
     .argument('[directory]', 'Directory to analyze')
     .argument('[language]', 'Language (java, cpp, c, csharp, haxe, typescript)')
