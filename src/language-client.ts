@@ -310,9 +310,7 @@ export class LanguageClient {
                 },
                 preview,
                 documentation: this.extractDocumentation(lines, symbol.selectionRange.start.line),
-                supertypes: this.isTypeSymbol(symbol)
-                    ? await this.getSupertypes(filePath, symbol.selectionRange.start)
-                    : undefined,
+                supertypes: await this.getSupertypesWithFallback(symbol, filePath, preview),
                 children: symbol.children ? await this.extractSymbols(symbol.children, filePath, lines) : undefined
             };
 
@@ -666,6 +664,133 @@ export class LanguageClient {
             line: lspPosition.line,
             character: lspPosition.character
         };
+    }
+
+    private async getSupertypesWithFallback(
+        symbol: DocumentSymbol,
+        filePath: string,
+        preview: string
+    ): Promise<string[] | undefined> {
+        if (!this.isTypeSymbol(symbol)) {
+            return undefined;
+        }
+
+        const lspSupertypes = await this.getSupertypes(filePath, symbol.selectionRange.start);
+
+        // For Java, use our parser if:
+        // 1. LSP didn't return any supertypes but preview shows extends/implements
+        // 2. LSP returned malformed supertypes (containing "extends" or angle brackets in wrong places)
+        if (this.language === 'java' && preview) {
+            const needsFallback =
+                !lspSupertypes ||
+                lspSupertypes.length === 0 ||
+                lspSupertypes.some((t) => t.includes('extends') || (t.includes('>') && !t.match(/^\w+<.*>$/)));
+
+            if (needsFallback) {
+                return this.parseJavaSupertypesFromPreview(preview);
+            }
+
+            // If LSP gave us some supertypes but preview shows more (interfaces), merge them
+            const parsedSupertypes = this.parseJavaSupertypesFromPreview(preview);
+            if (parsedSupertypes && parsedSupertypes.length > lspSupertypes.length) {
+                return parsedSupertypes;
+            }
+        }
+
+        return lspSupertypes;
+    }
+
+    private parseJavaSupertypesFromPreview(preview: string): string[] | undefined {
+        if (!preview || this.language !== 'java') {
+            return undefined;
+        }
+
+        const supertypes: string[] = [];
+
+        // First remove the class/interface declaration part to avoid confusion
+        // We need to handle nested generics properly
+        let afterTypeParams = preview;
+
+        // Remove class/interface declaration with proper generic handling
+        const declMatch = preview.match(/^.*?(?:class|interface)\s+\w+/);
+        if (declMatch) {
+            let pos = declMatch[0].length;
+            let angleDepth = 0;
+
+            // Skip over generic parameters of the class/interface itself
+            if (pos < preview.length && preview[pos] === '<') {
+                while (pos < preview.length) {
+                    if (preview[pos] === '<') angleDepth++;
+                    else if (preview[pos] === '>') angleDepth--;
+                    pos++;
+                    if (angleDepth === 0) break;
+                }
+            }
+
+            afterTypeParams = preview.substring(pos).trim();
+        }
+
+        // Extract extends clause
+        const extendsMatch = afterTypeParams.match(/\bextends\s+([^{]+?)(?:\s+implements|\s*{|$)/);
+        if (extendsMatch) {
+            const extendsClause = extendsMatch[1].trim();
+            // Handle generic types properly - we need to track angle bracket depth
+            const types = this.splitTypeList(extendsClause);
+            for (const type of types) {
+                // Remove generic parameters (everything after <)
+                const cleanType = type.replace(/<.*>/, '').trim();
+                if (cleanType && cleanType !== 'extends' && cleanType !== 'implements') {
+                    supertypes.push(cleanType);
+                }
+            }
+        }
+
+        // Extract implements clause
+        const implementsMatch = afterTypeParams.match(/\bimplements\s+([^{]+?)(?:\s*{|$)/);
+        if (implementsMatch) {
+            const implementsClause = implementsMatch[1].trim();
+            // Handle generic types properly
+            const types = this.splitTypeList(implementsClause);
+            for (const type of types) {
+                // Remove generic parameters (everything after <)
+                const cleanType = type.replace(/<.*>/, '').trim();
+                if (cleanType && cleanType !== 'extends' && cleanType !== 'implements') {
+                    supertypes.push(cleanType);
+                }
+            }
+        }
+
+        return supertypes.length > 0 ? supertypes : undefined;
+    }
+
+    private splitTypeList(typeList: string): string[] {
+        const types: string[] = [];
+        let current = '';
+        let angleDepth = 0;
+
+        for (let i = 0; i < typeList.length; i++) {
+            const char = typeList[i];
+            if (char === '<') {
+                angleDepth++;
+                current += char;
+            } else if (char === '>') {
+                angleDepth--;
+                current += char;
+            } else if (char === ',' && angleDepth === 0) {
+                if (current.trim()) {
+                    types.push(current.trim());
+                }
+                current = '';
+            } else {
+                current += char;
+            }
+        }
+
+        if (current.trim()) {
+            types.push(current.trim());
+        }
+
+        return types;
     }
 
     private cleanSymbolName(name: string): string {

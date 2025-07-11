@@ -169,6 +169,44 @@ describe('Fixture-based LSP Tests', () => {
                     expect(complexBuilder.preview).toContain('class ComplexBuilder');
                 }
             }
+
+            // Check the new multi-line class declaration test file
+            const multiLineDeclaration = findSymbolByName(result.symbols, 'MultiLineDeclaration', 'class');
+            if (multiLineDeclaration) {
+                expect(multiLineDeclaration.preview).toBeDefined();
+                // Should contain the full declaration including extends and implements
+                expect(multiLineDeclaration.preview).toContain('extends BaseClass');
+                expect(multiLineDeclaration.preview).toContain('implements Update, Validate');
+
+                // Check supertypes
+                expect(multiLineDeclaration.supertypes).toBeDefined();
+                expect(multiLineDeclaration.supertypes).toContain('BaseClass');
+                expect(multiLineDeclaration.supertypes).toContain('Update');
+                expect(multiLineDeclaration.supertypes).toContain('Validate');
+            }
+
+            const singleLineBrace = findSymbolByName(result.symbols, 'SingleLineBrace', 'class');
+            if (singleLineBrace) {
+                expect(singleLineBrace.preview).toBeDefined();
+                expect(singleLineBrace.preview).toContain('class SingleLineBrace extends Parent');
+
+                // Check supertypes
+                expect(singleLineBrace.supertypes).toBeDefined();
+                expect(singleLineBrace.supertypes).toContain('Parent');
+            }
+
+            const complexInterface = findSymbolByName(result.symbols, 'ComplexInterface', 'interface');
+            if (complexInterface) {
+                expect(complexInterface.preview).toBeDefined();
+                expect(complexInterface.preview).toContain('interface ComplexInterface');
+                expect(complexInterface.preview).toContain('extends Interface1<T>');
+                expect(complexInterface.preview).toContain('Interface2<U>');
+
+                // Check supertypes (generic parameters should be stripped)
+                expect(complexInterface.supertypes).toBeDefined();
+                expect(complexInterface.supertypes).toContain('Interface1');
+                expect(complexInterface.supertypes).toContain('Interface2');
+            }
         });
     });
 
