@@ -145,6 +145,52 @@ describe('Fixture-based LSP Tests', () => {
             expect(serviceInterface!.preview).toContain('interface ServiceInterface');
         });
 
+        it('should extract supertypes consistently across type hierarchies', () => {
+            runLSPCLI(javaFixture, 'java', outputFile);
+            const result = readOutput(outputFile);
+
+            // Test SimpleChild
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            if (simpleChild) {
+                expect(simpleChild.supertypes).toBeDefined();
+                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+            }
+
+            // Test MultipleInterfaces
+            const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
+            if (multipleInterfaces) {
+                expect(multipleInterfaces.supertypes).toBeDefined();
+                expect(multipleInterfaces.supertypes).toContain('Interface1');
+                expect(multipleInterfaces.supertypes).toContain('Interface2');
+            }
+
+            // Test ComplexChild
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            if (complexChild) {
+                expect(complexChild.supertypes).toBeDefined();
+                expect(complexChild.supertypes).toContain('BaseClass');
+                expect(complexChild.supertypes).toContain('Interface1');
+                expect(complexChild.supertypes).toContain('Interface2');
+            }
+
+            // Test ExtendedInterface
+            const extendedInterface = findSymbolByName(result.symbols, 'ExtendedInterface', 'interface');
+            if (extendedInterface) {
+                expect(extendedInterface.supertypes).toBeDefined();
+                expect(extendedInterface.supertypes).toContain('BaseInterface');
+                expect(extendedInterface.supertypes).toContain('Interface1');
+            }
+
+            // Test KitchenSink
+            const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
+            if (kitchenSink) {
+                expect(kitchenSink.supertypes).toBeDefined();
+                expect(kitchenSink.supertypes).toContain('BaseClass');
+                expect(kitchenSink.supertypes).toContain('ExtendedInterface');
+                expect(kitchenSink.supertypes).toContain('Interface2');
+            }
+        });
+
         it('should handle multi-line declarations', () => {
             runLSPCLI(javaFixture, 'java', outputFile);
             const result = readOutput(outputFile);
@@ -334,6 +380,52 @@ describe('Fixture-based LSP Tests', () => {
             expect(orderStatus!.preview).toBeDefined();
             expect(orderStatus!.preview).toContain('enum OrderStatus');
         });
+
+        it('should extract supertypes consistently across type hierarchies', () => {
+            runLSPCLI(tsFixture, 'typescript', outputFile);
+            const result = readOutput(outputFile);
+
+            // Test SimpleChild
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            if (simpleChild) {
+                expect(simpleChild.supertypes).toBeDefined();
+                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+            }
+
+            // Test MultipleInterfaces
+            const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
+            if (multipleInterfaces) {
+                expect(multipleInterfaces.supertypes).toBeDefined();
+                expect(multipleInterfaces.supertypes).toContain('Interface1');
+                expect(multipleInterfaces.supertypes).toContain('Interface2');
+            }
+
+            // Test ComplexChild
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            if (complexChild) {
+                expect(complexChild.supertypes).toBeDefined();
+                expect(complexChild.supertypes).toContain('BaseClass');
+                expect(complexChild.supertypes).toContain('Interface1');
+                expect(complexChild.supertypes).toContain('Interface2');
+            }
+
+            // Test ExtendedInterface
+            const extendedInterface = findSymbolByName(result.symbols, 'ExtendedInterface', 'interface');
+            if (extendedInterface) {
+                expect(extendedInterface.supertypes).toBeDefined();
+                expect(extendedInterface.supertypes).toContain('BaseInterface');
+                expect(extendedInterface.supertypes).toContain('Interface1');
+            }
+
+            // Test KitchenSink
+            const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
+            if (kitchenSink) {
+                expect(kitchenSink.supertypes).toBeDefined();
+                expect(kitchenSink.supertypes).toContain('BaseClass');
+                expect(kitchenSink.supertypes).toContain('ExtendedInterface');
+                expect(kitchenSink.supertypes).toContain('Interface2');
+            }
+        });
     });
 
     describe('C++', () => {
@@ -448,6 +540,45 @@ describe('Fixture-based LSP Tests', () => {
                 const namespace = namespaces[0];
                 expect(namespace.preview).toBeDefined();
                 expect(namespace.preview).toContain('namespace');
+            }
+        });
+
+        it('should extract supertypes consistently across type hierarchies', () => {
+            runLSPCLI(cppFixture, 'cpp', outputFile);
+            const result = readOutput(outputFile);
+
+            // Test SimpleChild
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            if (simpleChild) {
+                expect(simpleChild.supertypes).toBeDefined();
+                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+            }
+
+            // Test MultipleInterfaces
+            const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
+            if (multipleInterfaces) {
+                expect(multipleInterfaces.supertypes).toBeDefined();
+                expect(multipleInterfaces.supertypes).toContain('Interface1');
+                expect(multipleInterfaces.supertypes).toContain('Interface2');
+            }
+
+            // Test ComplexChild
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            if (complexChild) {
+                expect(complexChild.supertypes).toBeDefined();
+                expect(complexChild.supertypes).toContain('BaseClass');
+                expect(complexChild.supertypes).toContain('Interface1');
+                expect(complexChild.supertypes).toContain('Interface2');
+            }
+
+            // Test KitchenSink
+            const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
+            if (kitchenSink) {
+                expect(kitchenSink.supertypes).toBeDefined();
+                expect(kitchenSink.supertypes).toContain('BaseClass');
+                expect(kitchenSink.supertypes).toContain('BaseInterface');
+                expect(kitchenSink.supertypes).toContain('Interface1');
+                expect(kitchenSink.supertypes).toContain('Interface2');
             }
         });
     });
@@ -628,9 +759,14 @@ describe('Fixture-based LSP Tests', () => {
             expect(playerMethods.some((m) => m.name === 'useAbility')).toBe(true);
             expect(playerMethods.some((m) => m.name === 'gainExperience')).toBe(true);
 
-            // Note: Haxe LSP currently does not provide supertypes information
-            // This is a limitation of the Haxe language server, not our implementation
-            expect(player!.supertypes).toBeUndefined();
+            // Check that supertypes are provided (Player extends Entity)
+            expect(player!.supertypes).toBeDefined();
+            expect(player!.supertypes).toContain('Entity');
+
+            // Check Enemy extends Entity
+            const enemy = classes.find((c) => c.name === 'Enemy');
+            expect(enemy!.supertypes).toBeDefined();
+            expect(enemy!.supertypes).toContain('Entity');
 
             // Check static methods
             const staticMethods = playerMethods.filter((m) => m.name === 'createDefaultPlayer');
@@ -657,6 +793,52 @@ describe('Fixture-based LSP Tests', () => {
             const hasVector3D = allSymbols.some((s) => s.name === 'Vector3D');
 
             expect(hasVector2D || hasVector3D).toBe(true);
+        });
+
+        it('should extract supertypes consistently across type hierarchies', () => {
+            runLSPCLI(haxeFixture, 'haxe', outputFile);
+            const result = readOutput(outputFile);
+
+            // Test SimpleChild
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            if (simpleChild) {
+                expect(simpleChild.supertypes).toBeDefined();
+                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+            }
+
+            // Test MultipleInterfaces
+            const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
+            if (multipleInterfaces) {
+                expect(multipleInterfaces.supertypes).toBeDefined();
+                expect(multipleInterfaces.supertypes).toContain('Interface1');
+                expect(multipleInterfaces.supertypes).toContain('Interface2');
+            }
+
+            // Test ComplexChild
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            if (complexChild) {
+                expect(complexChild.supertypes).toBeDefined();
+                expect(complexChild.supertypes).toContain('BaseClass');
+                expect(complexChild.supertypes).toContain('Interface1');
+                expect(complexChild.supertypes).toContain('Interface2');
+            }
+
+            // Test ExtendedInterface
+            const extendedInterface = findSymbolByName(result.symbols, 'ExtendedInterface', 'interface');
+            if (extendedInterface) {
+                expect(extendedInterface.supertypes).toBeDefined();
+                expect(extendedInterface.supertypes).toContain('BaseInterface');
+                expect(extendedInterface.supertypes).toContain('Interface1');
+            }
+
+            // Test KitchenSink
+            const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
+            if (kitchenSink) {
+                expect(kitchenSink.supertypes).toBeDefined();
+                expect(kitchenSink.supertypes).toContain('BaseClass');
+                expect(kitchenSink.supertypes).toContain('ExtendedInterface');
+                expect(kitchenSink.supertypes).toContain('Interface2');
+            }
         });
     });
 
@@ -834,6 +1016,46 @@ describe('Fixture-based LSP Tests', () => {
             // Check that supertypes are provided (User extends Entity)
             if (user!.supertypes) {
                 expect(user!.supertypes).toContain('Entity');
+            }
+        });
+
+        it('should extract supertypes consistently across type hierarchies', () => {
+            runLSPCLI(dartFixture, 'dart', outputFile);
+            const result = readOutput(outputFile);
+
+            // Test SimpleChild
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            if (simpleChild) {
+                expect(simpleChild.supertypes).toBeDefined();
+                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+            }
+
+            // Test MultipleInterfaces
+            const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
+            if (multipleInterfaces) {
+                expect(multipleInterfaces.supertypes).toBeDefined();
+                expect(multipleInterfaces.supertypes).toContain('Interface1');
+                expect(multipleInterfaces.supertypes).toContain('Interface2');
+            }
+
+            // Test ComplexChild
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            if (complexChild) {
+                expect(complexChild.supertypes).toBeDefined();
+                expect(complexChild.supertypes).toContain('BaseClass');
+                expect(complexChild.supertypes).toContain('Interface1');
+                expect(complexChild.supertypes).toContain('Interface2');
+            }
+
+            // Test KitchenSink with mixins
+            const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
+            if (kitchenSink) {
+                expect(kitchenSink.supertypes).toBeDefined();
+                expect(kitchenSink.supertypes).toContain('BaseClass');
+                expect(kitchenSink.supertypes).toContain('ValidationMixin');
+                expect(kitchenSink.supertypes).toContain('BaseInterface');
+                expect(kitchenSink.supertypes).toContain('Interface1');
+                expect(kitchenSink.supertypes).toContain('Interface2');
             }
         });
     });

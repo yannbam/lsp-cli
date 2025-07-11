@@ -117,7 +117,7 @@ The tool outputs JSON with all symbols found in the codebase:
 **Note:** The actual structure includes:
 - `preview`: Can be a single string or array of strings
 - `children`: Nested symbols (methods, fields, etc.) instead of `members`
-- `supertypes`: Parent classes/interfaces (optional)
+- `supertypes`: Parent classes/interfaces with generic parameters stripped (optional)
 - `documentation`: JSDoc/JavaDoc comments (optional)
 - `definition`: For C/C++ declarations, links to implementation (optional)
 

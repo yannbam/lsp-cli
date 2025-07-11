@@ -173,6 +173,60 @@ lsp-cli <directory> <language> <output-file>
 - The LSP server is included with the SDK (`dart language-server` command)
 - Supports analysis_options.yaml for project-specific linting rules
 
+## Supertype Information
+
+The `supertypes` field contains an array of parent classes and interfaces that a type extends or implements. Generic type parameters are stripped (e.g., `BaseClass<T>` is reported as `BaseClass`).
+
+### What is extracted by language:
+
+**Java**
+- Extended classes (from `extends` clause)
+- Implemented interfaces (from `implements` clause)
+- Generic parameters are removed from type names
+
+**TypeScript**
+- Extended classes (from `extends` clause)
+- Implemented interfaces (from `implements` clause)
+- Applies to both classes and interfaces
+
+**C++**
+- Base classes (after `:` in class declaration)
+- Access specifiers (public/private/protected) are removed
+- Multiple inheritance is supported
+
+**C**
+- Not applicable (C doesn't have inheritance)
+
+**Haxe**
+- Extended classes (from `extends` clause)
+- Implemented interfaces (from `implements` clause)
+- Interfaces can extend multiple interfaces (comma-separated)
+
+**Dart**
+- Extended classes (from `extends` clause)
+- Implemented interfaces (from `implements` clause)
+- Mixed-in classes (from `with` clause)
+- The implicit supertype `Object` is filtered out
+
+**C#**
+- Base classes and interfaces (after `:` in type declaration)
+- Generic constraints are not included
+
+### Example supertype queries:
+
+```bash
+# Find all classes that extend a specific base class
+jq -r '.symbols[] | select(.supertypes[]? == "BaseClass") | .name' symbols.json
+
+# Find classes implementing multiple interfaces
+jq -r '.symbols[] | select(.supertypes | length > 1) | 
+    "\(.name): \(.supertypes | join(", "))"' symbols.json
+
+# Build inheritance tree
+jq -r '.symbols[] | select(.kind == "class" and .supertypes) |
+    "\(.name) -> \(.supertypes[])"' symbols.json
+```
+
 ## Querying the JSON files
 
 ### Key Principle: Token-Efficient Queries
