@@ -14,7 +14,8 @@
         "format": "biome format --write .",
         "check": "npm run lint && npm run format && npm run typecheck",
         "prepublishOnly": "npm run build",
-        "test": "vitest",
+        "test": "vitest run",
+        "test:watch": "vitest",
         "prepare": "husky"
     },
     "dependencies": {

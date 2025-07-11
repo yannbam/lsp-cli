@@ -58,7 +58,11 @@ lsp-cli <directory> <language> <output-file>
   },
   "preview": "string" | ["string"],  // Code preview (string or array of lines)
   "documentation": "string",         // Optional: JSDoc/JavaDoc/Doxygen/etc. comments
-  "supertypes": ["string"],         // Optional: parent classes/interfaces
+  "typeParameters": ["string"],      // Optional: generic/template type parameter names (e.g., ["T", "U"])
+  "supertypes": [{                   // Optional: parent classes/interfaces
+    "name": "string",              // Name of parent type
+    "typeArguments": ["string"]    // Optional: type arguments (e.g., ["String", "T"])
+  }],
   "children": [],                    // Optional: nested symbols (methods, fields, inner classes etc.)
   "definition": {                    // Optional: for C/C++ declarations in headers
     "file": "string",              // Path to implementation file (.cpp)
@@ -175,7 +179,20 @@ lsp-cli <directory> <language> <output-file>
 
 ## Supertype Information
 
-The `supertypes` field contains an array of parent classes and interfaces that a type extends or implements. Generic type parameters are stripped (e.g., `BaseClass<T>` is reported as `BaseClass`).
+The `supertypes` field contains an array of parent classes and interfaces that a type extends or implements. Each entry is an object with a `name` field and optional `typeArguments` field for generic types.
+
+Example:
+```json
+{
+  "name": "ComplexChild",
+  "typeParameters": ["T", "U"],
+  "supertypes": [
+    { "name": "BaseClass", "typeArguments": ["T"] },
+    { "name": "Interface1", "typeArguments": ["U"] },
+    { "name": "Interface2" }
+  ]
+}
+```
 
 ### What is extracted by language:
 
@@ -216,15 +233,15 @@ The `supertypes` field contains an array of parent classes and interfaces that a
 
 ```bash
 # Find all classes that extend a specific base class
-jq -r '.symbols[] | select(.supertypes[]? == "BaseClass") | .name' symbols.json
+jq -r '.symbols[] | select(.supertypes[]? | .name == "BaseClass") | .name' symbols.json
 
 # Find classes implementing multiple interfaces
 jq -r '.symbols[] | select(.supertypes | length > 1) | 
-    "\(.name): \(.supertypes | join(", "))"' symbols.json
+    "\(.name): \(.supertypes | map(.name) | join(", "))"' symbols.json
 
 # Build inheritance tree
 jq -r '.symbols[] | select(.kind == "class" and .supertypes) |
-    "\(.name) -> \(.supertypes[])"' symbols.json
+    "\(.name) -> \(.supertypes[] | .name)"' symbols.json
 ```
 
 ## Querying the JSON files
@@ -255,7 +272,7 @@ jq -r '.symbols[] | .. | objects | select(.definition) |
 
 # 5. Get inheritance hierarchy (who extends what)
 jq -r '.symbols[] | select(.supertypes) |
-    "\(.name) extends \(.supertypes | join(", "))"' symbols.json
+    "\(.name) extends \(.supertypes | map(.name) | join(", "))"' symbols.json
 ```
 
 ### Task-Specific Efficient Queries

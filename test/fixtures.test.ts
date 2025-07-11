@@ -1,27 +1,37 @@
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { SymbolInfo } from '../src/types';
-import { readOutput, runLSPCLI } from './utils';
+import { type ExtractedSymbols, readOutput, runLSPCLI } from './utils';
 
 const FIXTURES_DIR = join(process.cwd(), 'test', 'fixtures');
+
+// Helper function to extract supertype names from the new structure
+function getSupertypeNames(symbol: any): string[] {
+    if (!symbol.supertypes) return [];
+    return symbol.supertypes.map((s: any) => s.name);
+}
 
 describe('Fixture-based LSP Tests', () => {
     describe('Java', () => {
         const javaFixture = join(FIXTURES_DIR, 'java');
         const outputFile = 'test-java-fixture.json';
+        let result: ExtractedSymbols;
 
-        afterEach(() => {
+        beforeAll(() => {
+            // Run the analysis once for all Java tests
+            runLSPCLI(javaFixture, 'java', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
             if (existsSync(outputFile)) {
                 execSync(`rm -f ${outputFile}`);
             }
         });
 
         it('should extract all Java symbol types', () => {
-            runLSPCLI(javaFixture, 'java', outputFile);
-            const result = readOutput(outputFile);
-
             expect(result.language).toBe('java');
             expect(result.symbols.length).toBeGreaterThan(0);
 
@@ -72,9 +82,10 @@ describe('Fixture-based LSP Tests', () => {
 
             // Check inheritance - some LSP servers might not provide this
             if (userService!.supertypes) {
-                expect(userService!.supertypes).toContain('BaseService');
-                expect(userService!.supertypes).toContain('ServiceInterface');
-                expect(userService!.supertypes).toContain('Auditable');
+                const supertypeNames = getSupertypeNames(userService!);
+                expect(supertypeNames).toContain('BaseService');
+                expect(supertypeNames).toContain('ServiceInterface');
+                expect(supertypeNames).toContain('Auditable');
             }
 
             // Check enum members
@@ -90,9 +101,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should have correct file paths and ranges', () => {
-            runLSPCLI(javaFixture, 'java', outputFile);
-            const result = readOutput(outputFile);
-
             const userService = findSymbolByName(result.symbols, 'UserService', 'class');
             expect(userService).toBeDefined();
             expect(userService!.file).toContain('UserService.java');
@@ -102,9 +110,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract preview text for symbols', () => {
-            runLSPCLI(javaFixture, 'java', outputFile);
-            const result = readOutput(outputFile);
-
             // Check class preview
             const userService = findSymbolByName(result.symbols, 'UserService', 'class');
             expect(userService).toBeDefined();
@@ -146,55 +151,53 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract supertypes consistently across type hierarchies', () => {
-            runLSPCLI(javaFixture, 'java', outputFile);
-            const result = readOutput(outputFile);
-
             // Test SimpleChild
             const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
             if (simpleChild) {
                 expect(simpleChild.supertypes).toBeDefined();
-                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+                expect(getSupertypeNames(simpleChild)).toEqual(['BaseClass']);
             }
 
             // Test MultipleInterfaces
             const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
             if (multipleInterfaces) {
                 expect(multipleInterfaces.supertypes).toBeDefined();
-                expect(multipleInterfaces.supertypes).toContain('Interface1');
-                expect(multipleInterfaces.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(multipleInterfaces);
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test ComplexChild
             const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
             if (complexChild) {
                 expect(complexChild.supertypes).toBeDefined();
-                expect(complexChild.supertypes).toContain('BaseClass');
-                expect(complexChild.supertypes).toContain('Interface1');
-                expect(complexChild.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(complexChild);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test ExtendedInterface
             const extendedInterface = findSymbolByName(result.symbols, 'ExtendedInterface', 'interface');
             if (extendedInterface) {
                 expect(extendedInterface.supertypes).toBeDefined();
-                expect(extendedInterface.supertypes).toContain('BaseInterface');
-                expect(extendedInterface.supertypes).toContain('Interface1');
+                const supertypeNames = getSupertypeNames(extendedInterface);
+                expect(supertypeNames).toContain('BaseInterface');
+                expect(supertypeNames).toContain('Interface1');
             }
 
             // Test KitchenSink
             const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
             if (kitchenSink) {
                 expect(kitchenSink.supertypes).toBeDefined();
-                expect(kitchenSink.supertypes).toContain('BaseClass');
-                expect(kitchenSink.supertypes).toContain('ExtendedInterface');
-                expect(kitchenSink.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(kitchenSink);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('ExtendedInterface');
+                expect(supertypeNames).toContain('Interface2');
             }
         });
 
         it('should handle multi-line declarations', () => {
-            runLSPCLI(javaFixture, 'java', outputFile);
-            const result = readOutput(outputFile);
-
             // Check if we have the multi-line declarations file
             const multiLineClass = findSymbolByName(result.symbols, 'MultiLineDeclarations', 'class');
             if (multiLineClass) {
@@ -226,9 +229,10 @@ describe('Fixture-based LSP Tests', () => {
 
                 // Check supertypes
                 expect(multiLineDeclaration.supertypes).toBeDefined();
-                expect(multiLineDeclaration.supertypes).toContain('BaseClass');
-                expect(multiLineDeclaration.supertypes).toContain('Update');
-                expect(multiLineDeclaration.supertypes).toContain('Validate');
+                const supertypeNames = getSupertypeNames(multiLineDeclaration);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('Update');
+                expect(supertypeNames).toContain('Validate');
             }
 
             const singleLineBrace = findSymbolByName(result.symbols, 'SingleLineBrace', 'class');
@@ -238,7 +242,7 @@ describe('Fixture-based LSP Tests', () => {
 
                 // Check supertypes
                 expect(singleLineBrace.supertypes).toBeDefined();
-                expect(singleLineBrace.supertypes).toContain('Parent');
+                expect(getSupertypeNames(singleLineBrace)).toContain('Parent');
             }
 
             const complexInterface = findSymbolByName(result.symbols, 'ComplexInterface', 'interface');
@@ -250,8 +254,9 @@ describe('Fixture-based LSP Tests', () => {
 
                 // Check supertypes (generic parameters should be stripped)
                 expect(complexInterface.supertypes).toBeDefined();
-                expect(complexInterface.supertypes).toContain('Interface1');
-                expect(complexInterface.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(complexInterface);
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
         });
     });
@@ -259,17 +264,21 @@ describe('Fixture-based LSP Tests', () => {
     describe('TypeScript', () => {
         const tsFixture = join(FIXTURES_DIR, 'typescript');
         const outputFile = 'test-ts-fixture.json';
+        let result: ExtractedSymbols;
 
-        afterEach(() => {
+        beforeAll(() => {
+            // Run the analysis once for all TypeScript tests
+            runLSPCLI(tsFixture, 'typescript', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
             if (existsSync(outputFile)) {
                 execSync(`rm -f ${outputFile}`);
             }
         });
 
         it('should extract all TypeScript symbol types', () => {
-            runLSPCLI(tsFixture, 'typescript', outputFile);
-            const result = readOutput(outputFile);
-
             expect(result.language).toBe('typescript');
             expect(result.symbols.length).toBeGreaterThan(0);
 
@@ -333,9 +342,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract enum members correctly', () => {
-            runLSPCLI(tsFixture, 'typescript', outputFile);
-            const result = readOutput(outputFile);
-
             const orderStatus = findSymbolByName(result.symbols, 'OrderStatus', 'enum');
             expect(orderStatus).toBeDefined();
             expect(orderStatus!.children).toBeDefined();
@@ -349,9 +355,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract preview text for TypeScript symbols', () => {
-            runLSPCLI(tsFixture, 'typescript', outputFile);
-            const result = readOutput(outputFile);
-
             // Check class preview
             const orderService = findSymbolByName(result.symbols, 'OrderService', 'class');
             expect(orderService).toBeDefined();
@@ -382,48 +385,49 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract supertypes consistently across type hierarchies', () => {
-            runLSPCLI(tsFixture, 'typescript', outputFile);
-            const result = readOutput(outputFile);
-
             // Test SimpleChild
             const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
             if (simpleChild) {
                 expect(simpleChild.supertypes).toBeDefined();
-                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+                expect(getSupertypeNames(simpleChild)).toEqual(['BaseClass']);
             }
 
             // Test MultipleInterfaces
             const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
             if (multipleInterfaces) {
                 expect(multipleInterfaces.supertypes).toBeDefined();
-                expect(multipleInterfaces.supertypes).toContain('Interface1');
-                expect(multipleInterfaces.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(multipleInterfaces);
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test ComplexChild
             const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
             if (complexChild) {
                 expect(complexChild.supertypes).toBeDefined();
-                expect(complexChild.supertypes).toContain('BaseClass');
-                expect(complexChild.supertypes).toContain('Interface1');
-                expect(complexChild.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(complexChild);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test ExtendedInterface
             const extendedInterface = findSymbolByName(result.symbols, 'ExtendedInterface', 'interface');
             if (extendedInterface) {
                 expect(extendedInterface.supertypes).toBeDefined();
-                expect(extendedInterface.supertypes).toContain('BaseInterface');
-                expect(extendedInterface.supertypes).toContain('Interface1');
+                const supertypeNames = getSupertypeNames(extendedInterface);
+                expect(supertypeNames).toContain('BaseInterface');
+                expect(supertypeNames).toContain('Interface1');
             }
 
             // Test KitchenSink
             const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
             if (kitchenSink) {
                 expect(kitchenSink.supertypes).toBeDefined();
-                expect(kitchenSink.supertypes).toContain('BaseClass');
-                expect(kitchenSink.supertypes).toContain('ExtendedInterface');
-                expect(kitchenSink.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(kitchenSink);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('ExtendedInterface');
+                expect(supertypeNames).toContain('Interface2');
             }
         });
     });
@@ -431,17 +435,21 @@ describe('Fixture-based LSP Tests', () => {
     describe('C++', () => {
         const cppFixture = join(FIXTURES_DIR, 'cpp');
         const outputFile = 'test-cpp-fixture.json';
+        let result: ExtractedSymbols;
 
-        afterEach(() => {
+        beforeAll(() => {
+            // Run the analysis once for all C++ tests
+            runLSPCLI(cppFixture, 'cpp', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
             if (existsSync(outputFile)) {
                 execSync(`rm -f ${outputFile}`);
             }
         });
 
         it('should extract all C++ symbol types', () => {
-            runLSPCLI(cppFixture, 'cpp', outputFile);
-            const result = readOutput(outputFile);
-
             expect(result.language).toBe('cpp');
             expect(result.symbols.length).toBeGreaterThan(0);
 
@@ -488,9 +496,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should link declarations to definitions', () => {
-            runLSPCLI(cppFixture, 'cpp', outputFile);
-            const result = readOutput(outputFile);
-
             // Find methods that should have definitions
             const renderer = findSymbolByName(result.symbols, 'Renderer', 'class');
             expect(renderer).toBeDefined();
@@ -509,9 +514,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract preview text for C++ symbols and definitions', () => {
-            runLSPCLI(cppFixture, 'cpp', outputFile);
-            const result = readOutput(outputFile);
-
             // Check class preview
             const renderer = findSymbolByName(result.symbols, 'Renderer', 'class');
             expect(renderer).toBeDefined();
@@ -544,41 +546,41 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract supertypes consistently across type hierarchies', () => {
-            runLSPCLI(cppFixture, 'cpp', outputFile);
-            const result = readOutput(outputFile);
-
             // Test SimpleChild
             const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
             if (simpleChild) {
                 expect(simpleChild.supertypes).toBeDefined();
-                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+                expect(getSupertypeNames(simpleChild)).toEqual(['BaseClass']);
             }
 
             // Test MultipleInterfaces
             const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
             if (multipleInterfaces) {
                 expect(multipleInterfaces.supertypes).toBeDefined();
-                expect(multipleInterfaces.supertypes).toContain('Interface1');
-                expect(multipleInterfaces.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(multipleInterfaces);
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test ComplexChild
             const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
             if (complexChild) {
                 expect(complexChild.supertypes).toBeDefined();
-                expect(complexChild.supertypes).toContain('BaseClass');
-                expect(complexChild.supertypes).toContain('Interface1');
-                expect(complexChild.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(complexChild);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test KitchenSink
             const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
             if (kitchenSink) {
                 expect(kitchenSink.supertypes).toBeDefined();
-                expect(kitchenSink.supertypes).toContain('BaseClass');
-                expect(kitchenSink.supertypes).toContain('BaseInterface');
-                expect(kitchenSink.supertypes).toContain('Interface1');
-                expect(kitchenSink.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(kitchenSink);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('BaseInterface');
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
         });
     });
@@ -586,17 +588,21 @@ describe('Fixture-based LSP Tests', () => {
     describe('C', () => {
         const cFixture = join(FIXTURES_DIR, 'c');
         const outputFile = 'test-c-fixture.json';
+        let result: ExtractedSymbols;
 
-        afterEach(() => {
+        beforeAll(() => {
+            // Run the analysis once for all C tests
+            runLSPCLI(cFixture, 'c', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
             if (existsSync(outputFile)) {
                 execSync(`rm -f ${outputFile}`);
             }
         });
 
         it('should extract all C symbol types', () => {
-            runLSPCLI(cFixture, 'c', outputFile);
-            const result = readOutput(outputFile);
-
             expect(result.language).toBe('c');
             expect(result.symbols.length).toBeGreaterThan(0);
 
@@ -645,9 +651,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should handle typedefs and function pointers', () => {
-            runLSPCLI(cFixture, 'c', outputFile);
-            const result = readOutput(outputFile);
-
             // Check for typedef structs
             const structs = result.symbols.filter((s) => s.kind === 'class');
             expect(structs.some((s) => s.name === 'StringBuffer')).toBe(true);
@@ -659,9 +662,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should merge typedef structs and unions correctly', () => {
-            runLSPCLI(cFixture, 'c', outputFile);
-            const result = readOutput(outputFile);
-
             const allSymbols = flattenSymbols(result.symbols);
 
             // Check that anonymous structs are properly merged
@@ -710,17 +710,21 @@ describe('Fixture-based LSP Tests', () => {
     describe('Haxe', () => {
         const haxeFixture = join(FIXTURES_DIR, 'haxe');
         const outputFile = 'test-haxe-fixture.json';
+        let result: ExtractedSymbols;
 
-        afterEach(() => {
+        beforeAll(() => {
+            // Run the analysis once for all Haxe tests
+            runLSPCLI(haxeFixture, 'haxe', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
             if (existsSync(outputFile)) {
                 execSync(`rm -f ${outputFile}`);
             }
         });
 
         it('should extract all Haxe symbol types', () => {
-            runLSPCLI(haxeFixture, 'haxe', outputFile);
-            const result = readOutput(outputFile);
-
             expect(result.language).toBe('haxe');
             expect(result.symbols.length).toBeGreaterThan(0);
 
@@ -761,12 +765,12 @@ describe('Fixture-based LSP Tests', () => {
 
             // Check that supertypes are provided (Player extends Entity)
             expect(player!.supertypes).toBeDefined();
-            expect(player!.supertypes).toContain('Entity');
+            expect(getSupertypeNames(player!)).toContain('Entity');
 
             // Check Enemy extends Entity
             const enemy = classes.find((c) => c.name === 'Enemy');
             expect(enemy!.supertypes).toBeDefined();
-            expect(enemy!.supertypes).toContain('Entity');
+            expect(getSupertypeNames(enemy!)).toContain('Entity');
 
             // Check static methods
             const staticMethods = playerMethods.filter((m) => m.name === 'createDefaultPlayer');
@@ -782,9 +786,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract typedefs', () => {
-            runLSPCLI(haxeFixture, 'haxe', outputFile);
-            const result = readOutput(outputFile);
-
             // Haxe typedefs might be in variables or have their own kind
             const allSymbols = flattenSymbols(result.symbols);
 
@@ -796,48 +797,49 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract supertypes consistently across type hierarchies', () => {
-            runLSPCLI(haxeFixture, 'haxe', outputFile);
-            const result = readOutput(outputFile);
-
             // Test SimpleChild
             const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
             if (simpleChild) {
                 expect(simpleChild.supertypes).toBeDefined();
-                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+                expect(getSupertypeNames(simpleChild)).toEqual(['BaseClass']);
             }
 
             // Test MultipleInterfaces
             const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
             if (multipleInterfaces) {
                 expect(multipleInterfaces.supertypes).toBeDefined();
-                expect(multipleInterfaces.supertypes).toContain('Interface1');
-                expect(multipleInterfaces.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(multipleInterfaces);
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test ComplexChild
             const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
             if (complexChild) {
                 expect(complexChild.supertypes).toBeDefined();
-                expect(complexChild.supertypes).toContain('BaseClass');
-                expect(complexChild.supertypes).toContain('Interface1');
-                expect(complexChild.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(complexChild);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test ExtendedInterface
             const extendedInterface = findSymbolByName(result.symbols, 'ExtendedInterface', 'interface');
             if (extendedInterface) {
                 expect(extendedInterface.supertypes).toBeDefined();
-                expect(extendedInterface.supertypes).toContain('BaseInterface');
-                expect(extendedInterface.supertypes).toContain('Interface1');
+                const supertypeNames = getSupertypeNames(extendedInterface);
+                expect(supertypeNames).toContain('BaseInterface');
+                expect(supertypeNames).toContain('Interface1');
             }
 
             // Test KitchenSink
             const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
             if (kitchenSink) {
                 expect(kitchenSink.supertypes).toBeDefined();
-                expect(kitchenSink.supertypes).toContain('BaseClass');
-                expect(kitchenSink.supertypes).toContain('ExtendedInterface');
-                expect(kitchenSink.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(kitchenSink);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('ExtendedInterface');
+                expect(supertypeNames).toContain('Interface2');
             }
         });
     });
@@ -893,17 +895,21 @@ describe('Fixture-based LSP Tests', () => {
     describe('Dart', () => {
         const dartFixture = join(FIXTURES_DIR, 'dart');
         const outputFile = 'test-dart-fixture.json';
+        let result: ExtractedSymbols;
 
-        afterEach(() => {
+        beforeAll(() => {
+            // Run the analysis once for all Dart tests
+            runLSPCLI(dartFixture, 'dart', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
             if (existsSync(outputFile)) {
                 execSync(`rm -f ${outputFile}`);
             }
         });
 
         it('should extract all Dart symbol types', () => {
-            runLSPCLI(dartFixture, 'dart', outputFile);
-            const result = readOutput(outputFile);
-
             expect(result.language).toBe('dart');
             expect(result.symbols.length).toBeGreaterThan(0);
 
@@ -975,9 +981,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should extract enum members correctly', () => {
-            runLSPCLI(dartFixture, 'dart', outputFile);
-            const result = readOutput(outputFile);
-
             const userStatus = findSymbolByName(result.symbols, 'UserStatus', 'enum');
             expect(userStatus).toBeDefined();
             expect(userStatus!.children).toBeDefined();
@@ -992,9 +995,6 @@ describe('Fixture-based LSP Tests', () => {
         });
 
         it('should handle Dart-specific features', () => {
-            runLSPCLI(dartFixture, 'dart', outputFile);
-            const result = readOutput(outputFile);
-
             // Check for async methods
             const userService = findSymbolByName(result.symbols, 'UserService', 'class');
             const serviceMethods = userService!.children!.filter((c) => c.kind === 'method');
@@ -1015,47 +1015,47 @@ describe('Fixture-based LSP Tests', () => {
 
             // Check that supertypes are provided (User extends Entity)
             if (user!.supertypes) {
-                expect(user!.supertypes).toContain('Entity');
+                expect(getSupertypeNames(user!)).toContain('Entity');
             }
         });
 
         it('should extract supertypes consistently across type hierarchies', () => {
-            runLSPCLI(dartFixture, 'dart', outputFile);
-            const result = readOutput(outputFile);
-
             // Test SimpleChild
             const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
             if (simpleChild) {
                 expect(simpleChild.supertypes).toBeDefined();
-                expect(simpleChild.supertypes).toEqual(['BaseClass']);
+                expect(getSupertypeNames(simpleChild)).toEqual(['BaseClass']);
             }
 
             // Test MultipleInterfaces
             const multipleInterfaces = findSymbolByName(result.symbols, 'MultipleInterfaces', 'class');
             if (multipleInterfaces) {
                 expect(multipleInterfaces.supertypes).toBeDefined();
-                expect(multipleInterfaces.supertypes).toContain('Interface1');
-                expect(multipleInterfaces.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(multipleInterfaces);
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test ComplexChild
             const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
             if (complexChild) {
                 expect(complexChild.supertypes).toBeDefined();
-                expect(complexChild.supertypes).toContain('BaseClass');
-                expect(complexChild.supertypes).toContain('Interface1');
-                expect(complexChild.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(complexChild);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
 
             // Test KitchenSink with mixins
             const kitchenSink = findSymbolByName(result.symbols, 'KitchenSink', 'class');
             if (kitchenSink) {
                 expect(kitchenSink.supertypes).toBeDefined();
-                expect(kitchenSink.supertypes).toContain('BaseClass');
-                expect(kitchenSink.supertypes).toContain('ValidationMixin');
-                expect(kitchenSink.supertypes).toContain('BaseInterface');
-                expect(kitchenSink.supertypes).toContain('Interface1');
-                expect(kitchenSink.supertypes).toContain('Interface2');
+                const supertypeNames = getSupertypeNames(kitchenSink);
+                expect(supertypeNames).toContain('BaseClass');
+                expect(supertypeNames).toContain('ValidationMixin');
+                expect(supertypeNames).toContain('BaseInterface');
+                expect(supertypeNames).toContain('Interface1');
+                expect(supertypeNames).toContain('Interface2');
             }
         });
     });
@@ -1074,6 +1074,409 @@ function findSymbolByName(symbols: SymbolInfo[], name: string, kind?: string): S
     }
     return undefined;
 }
+
+describe('Generic/Template Type Parameter Tests', () => {
+    describe('Java Generics', () => {
+        const outputFile = 'test-java-generics.json';
+        let result: ExtractedSymbols;
+
+        beforeAll(() => {
+            const javaFixture = join(FIXTURES_DIR, 'java');
+            runLSPCLI(javaFixture, 'java', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
+            if (existsSync(outputFile)) {
+                execSync(`rm -f ${outputFile}`);
+            }
+        });
+
+        it('should extract type parameters from classes', () => {
+            // BaseClass<T>
+            const baseClass = findSymbolByName(result.symbols, 'BaseClass', 'class');
+            expect(baseClass?.typeParameters).toEqual(['T']);
+
+            // ComplexChild<T, U>
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            expect(complexChild?.typeParameters).toEqual(['T', 'U']);
+
+            // SimpleChild (no type parameters)
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            expect(simpleChild?.typeParameters).toBeUndefined();
+        });
+
+        it('should extract type parameters from interfaces', () => {
+            // Interface1<T>
+            const interface1 = findSymbolByName(result.symbols, 'Interface1', 'interface');
+            expect(interface1?.typeParameters).toEqual(['T']);
+
+            // ComplexInterface<T, U>
+            const complexInterface = findSymbolByName(result.symbols, 'ComplexInterface', 'interface');
+            expect(complexInterface?.typeParameters).toEqual(['T', 'U']);
+
+            // Interface2 (no type parameters)
+            const interface2 = findSymbolByName(result.symbols, 'Interface2', 'interface');
+            expect(interface2?.typeParameters).toBeUndefined();
+        });
+
+        it('should handle bounded type parameters', () => {
+            // MultiLineDeclaration<T extends MultiLineDeclaration<T, D, P>, D extends Data<T, P>, P extends Pose>
+            const multiLine = findSymbolByName(result.symbols, 'MultiLineDeclaration', 'class');
+            expect(multiLine?.typeParameters).toEqual(['T', 'D', 'P']);
+        });
+
+        it('should preserve type arguments in supertypes', () => {
+            // SimpleChild extends BaseClass<String>
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            const simpleChildBase = simpleChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            expect(simpleChildBase?.typeArguments).toEqual(['String']);
+
+            // ComplexChild<T, U> extends BaseClass<T> implements Interface1<U>, Interface2
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            const complexChildBase = complexChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            const complexChildInterface1 = complexChild?.supertypes?.find((s: any) => s.name === 'Interface1');
+            const complexChildInterface2 = complexChild?.supertypes?.find((s: any) => s.name === 'Interface2');
+
+            expect(complexChildBase?.typeArguments).toEqual(['T']);
+            expect(complexChildInterface1?.typeArguments).toEqual(['U']);
+            expect(complexChildInterface2?.typeArguments).toBeUndefined();
+        });
+
+        it('should handle complex nested generics in supertypes', () => {
+            // MultiLineDeclaration extends BaseClass<D, P, P>
+            const multiLine = findSymbolByName(result.symbols, 'MultiLineDeclaration', 'class');
+            const multiLineBase = multiLine?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            expect(multiLineBase?.typeArguments).toEqual(['D', 'P', 'P']);
+        });
+
+        it('should handle wildcard and bounded types (adversarial)', () => {
+            // Even with complex wildcards in the source, extraction should work
+            const allClasses = result.symbols.filter((s) => s.kind === 'class');
+            allClasses.forEach((cls) => {
+                // Type parameters should be simple names
+                if (cls.typeParameters) {
+                    cls.typeParameters.forEach((param) => {
+                        expect(param).toMatch(/^[A-Za-z_]\w*$/);
+                    });
+                }
+            });
+        });
+    });
+
+    describe('TypeScript Generics', () => {
+        const outputFile = 'test-typescript-generics.json';
+        let result: ExtractedSymbols;
+
+        beforeAll(() => {
+            const tsFixture = join(FIXTURES_DIR, 'typescript');
+            runLSPCLI(tsFixture, 'typescript', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
+            if (existsSync(outputFile)) {
+                execSync(`rm -f ${outputFile}`);
+            }
+        });
+
+        it('should extract type parameters from classes', () => {
+            // BaseClass<T = any>
+            const baseClass = findSymbolByName(result.symbols, 'BaseClass', 'class');
+            expect(baseClass?.typeParameters).toEqual(['T']);
+
+            // ComplexChild<T, U>
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            expect(complexChild?.typeParameters).toEqual(['T', 'U']);
+        });
+
+        it('should extract type parameters from interfaces', () => {
+            // Interface1<T = any>
+            const interface1 = findSymbolByName(result.symbols, 'Interface1', 'interface');
+            expect(interface1?.typeParameters).toEqual(['T']);
+
+            // ExtendedInterface<T>
+            const extendedInterface = findSymbolByName(result.symbols, 'ExtendedInterface', 'interface');
+            expect(extendedInterface?.typeParameters).toEqual(['T']);
+        });
+
+        it('should extract type parameters from type aliases', () => {
+            // type Result<T, E = Error>
+            // Note: TypeScript LSP reports type aliases as 'variable'
+            const resultType = result.symbols.find(
+                (s) => s.name === 'Result' && (s.kind === 'type' || s.kind === 'variable')
+            );
+            expect(resultType?.typeParameters).toEqual(['T', 'E']);
+
+            // type OrderField<T extends keyof Order>
+            const orderField = result.symbols.find(
+                (s) => s.name === 'OrderField' && (s.kind === 'type' || s.kind === 'variable')
+            );
+            expect(orderField?.typeParameters).toEqual(['T']);
+        });
+
+        it('should preserve type arguments in supertypes', () => {
+            // SimpleChild extends BaseClass<string>
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            const simpleChildBase = simpleChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            expect(simpleChildBase?.typeArguments).toEqual(['string']);
+
+            // ComplexChild<T, U> extends BaseClass<T> implements Interface1<U>, Interface2
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            const complexChildBase = complexChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            const complexChildInterface1 = complexChild?.supertypes?.find((s: any) => s.name === 'Interface1');
+
+            expect(complexChildBase?.typeArguments).toEqual(['T']);
+            expect(complexChildInterface1?.typeArguments).toEqual(['U']);
+        });
+
+        it('should handle generic constraints and defaults (adversarial)', () => {
+            // TypeScript allows complex constraints and defaults
+            const allTypes = result.symbols.filter(
+                (s) => s.kind === 'class' || s.kind === 'interface' || s.kind === 'type'
+            );
+
+            allTypes.forEach((type) => {
+                if (type.typeParameters) {
+                    // Should extract parameter names only, not constraints or defaults
+                    type.typeParameters.forEach((param) => {
+                        expect(param).not.toContain('=');
+                        expect(param).not.toContain('extends');
+                        expect(param).toMatch(/^[A-Za-z_]\w*$/);
+                    });
+                }
+            });
+        });
+    });
+
+    describe('C++ Templates', () => {
+        const outputFile = 'test-cpp-templates.json';
+        let result: ExtractedSymbols;
+
+        beforeAll(() => {
+            const cppFixture = join(FIXTURES_DIR, 'cpp');
+            runLSPCLI(cppFixture, 'cpp', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
+            if (existsSync(outputFile)) {
+                execSync(`rm -f ${outputFile}`);
+            }
+        });
+
+        it('should extract template parameters from classes', () => {
+            // With our improved preview construction, we can now extract C++ templates
+
+            // template<typename T = void> class BaseClass
+            const baseClass = findSymbolByName(result.symbols, 'BaseClass', 'class');
+            expect(baseClass?.typeParameters).toEqual(['T']);
+
+            // template<typename T, typename U> class ComplexChild
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            expect(complexChild?.typeParameters).toEqual(['T', 'U']);
+
+            // SimpleChild should not have type parameters
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            expect(simpleChild?.typeParameters).toBeUndefined();
+        });
+
+        it('should handle non-type template parameters', () => {
+            // template<int N> - non-type template parameter
+            const allSymbols = flattenSymbols(result.symbols);
+            const vectorN = allSymbols.find((s) => s.name === 'VectorN' && s.kind === 'class');
+            expect(vectorN?.typeParameters).toEqual(['N']);
+        });
+
+        it('should preserve template arguments in supertypes', () => {
+            // SimpleChild : public BaseClass<std::string>
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            const simpleChildBase = simpleChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            expect(simpleChildBase?.typeArguments).toEqual(['std::string']);
+
+            // ComplexChild<T, U> : public BaseClass<T>, public Interface1<U>
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            const complexChildBase = complexChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            const complexChildInterface1 = complexChild?.supertypes?.find((s: any) => s.name === 'Interface1');
+
+            expect(complexChildBase?.typeArguments).toEqual(['T']);
+            expect(complexChildInterface1?.typeArguments).toEqual(['U']);
+        });
+
+        it('should handle template template parameters (adversarial)', () => {
+            // C++ allows template<template<typename> class T>
+            // We should still extract clean parameter names
+            const allClasses = result.symbols.filter((s) => s.kind === 'class');
+            allClasses.forEach((cls) => {
+                if (cls.typeParameters) {
+                    cls.typeParameters.forEach((param) => {
+                        // Should be clean identifier
+                        expect(param).toMatch(/^[A-Za-z_]\w*$/);
+                    });
+                }
+            });
+        });
+    });
+
+    describe('Haxe Generics', () => {
+        const outputFile = 'test-haxe-generics.json';
+        let result: ExtractedSymbols;
+
+        beforeAll(() => {
+            const haxeFixture = join(FIXTURES_DIR, 'haxe');
+            runLSPCLI(haxeFixture, 'haxe', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
+            if (existsSync(outputFile)) {
+                execSync(`rm -f ${outputFile}`);
+            }
+        });
+
+        it('should extract type parameters from classes', () => {
+            // class BaseClass<T>
+            const baseClass = findSymbolByName(result.symbols, 'BaseClass', 'class');
+            expect(baseClass?.typeParameters).toEqual(['T']);
+
+            // class ComplexChild<T, U>
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            expect(complexChild?.typeParameters).toEqual(['T', 'U']);
+        });
+
+        it('should extract type parameters from interfaces', () => {
+            // interface Interface1<T>
+            const interface1 = findSymbolByName(result.symbols, 'Interface1', 'interface');
+            expect(interface1?.typeParameters).toEqual(['T']);
+
+            // interface ExtendedInterface<T>
+            const extendedInterface = findSymbolByName(result.symbols, 'ExtendedInterface', 'interface');
+            expect(extendedInterface?.typeParameters).toEqual(['T']);
+        });
+
+        it('should preserve type arguments in supertypes', () => {
+            // SimpleChild extends BaseClass<String>
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            const simpleChildBase = simpleChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            expect(simpleChildBase?.typeArguments).toEqual(['String']);
+
+            // ComplexChild<T, U> extends BaseClass<T> implements Interface1<U>
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            const complexChildBase = complexChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            const complexChildInterface1 = complexChild?.supertypes?.find((s: any) => s.name === 'Interface1');
+
+            expect(complexChildBase?.typeArguments).toEqual(['T']);
+            expect(complexChildInterface1?.typeArguments).toEqual(['U']);
+        });
+
+        it('should handle Haxe-specific generic syntax (adversarial)', () => {
+            // Haxe uses <T:Constraint> syntax
+            const allTypes = result.symbols.filter((s) => s.kind === 'class' || s.kind === 'interface');
+
+            allTypes.forEach((type) => {
+                if (type.typeParameters) {
+                    type.typeParameters.forEach((param) => {
+                        // Should not include constraints
+                        expect(param).not.toContain(':');
+                        expect(param).toMatch(/^[A-Za-z_]\w*$/);
+                    });
+                }
+            });
+        });
+    });
+
+    describe('Dart Generics', () => {
+        const outputFile = 'test-dart-generics.json';
+        let result: ExtractedSymbols;
+
+        beforeAll(() => {
+            const dartFixture = join(FIXTURES_DIR, 'dart');
+            runLSPCLI(dartFixture, 'dart', outputFile);
+            result = readOutput(outputFile);
+        });
+
+        afterAll(() => {
+            if (existsSync(outputFile)) {
+                execSync(`rm -f ${outputFile}`);
+            }
+        });
+
+        it('should extract type parameters from classes', () => {
+            // class BaseClass<T>
+            const baseClass = findSymbolByName(result.symbols, 'BaseClass', 'class');
+            expect(baseClass?.typeParameters).toEqual(['T']);
+
+            // class ComplexChild<T, U>
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            expect(complexChild?.typeParameters).toEqual(['T', 'U']);
+        });
+
+        it('should extract type parameters from abstract classes', () => {
+            // abstract class Interface1<T>
+            const interface1 = findSymbolByName(result.symbols, 'Interface1', 'class');
+            expect(interface1?.typeParameters).toEqual(['T']);
+        });
+
+        it('should preserve type arguments in supertypes', () => {
+            // SimpleChild extends BaseClass<String>
+            const simpleChild = findSymbolByName(result.symbols, 'SimpleChild', 'class');
+            const simpleChildBase = simpleChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            expect(simpleChildBase?.typeArguments).toEqual(['String']);
+
+            // ComplexChild<T, U> extends BaseClass<T> implements Interface1<U>
+            const complexChild = findSymbolByName(result.symbols, 'ComplexChild', 'class');
+            const complexChildBase = complexChild?.supertypes?.find((s: any) => s.name === 'BaseClass');
+            const complexChildInterface1 = complexChild?.supertypes?.find((s: any) => s.name === 'Interface1');
+
+            expect(complexChildBase?.typeArguments).toEqual(['T']);
+            expect(complexChildInterface1?.typeArguments).toEqual(['U']);
+        });
+
+        it('should handle Dart-specific generic features (adversarial)', () => {
+            // Dart allows bounded generics like <T extends Comparable<T>>
+            const allClasses = result.symbols.filter((s) => s.kind === 'class');
+
+            allClasses.forEach((cls) => {
+                if (cls.typeParameters) {
+                    cls.typeParameters.forEach((param) => {
+                        // Should extract clean parameter names
+                        expect(param).not.toContain('extends');
+                        expect(param).toMatch(/^[A-Za-z_]\w*$/);
+                    });
+                }
+            });
+        });
+    });
+
+    describe('Cross-Language Consistency', () => {
+        it('should handle empty type parameters consistently', () => {
+            // Some LSPs might report <> as empty array, some as undefined
+            const languages = ['java', 'typescript', 'cpp', 'haxe', 'dart'];
+
+            languages.forEach((lang) => {
+                const fixture = join(FIXTURES_DIR, lang);
+                if (!existsSync(fixture)) return;
+
+                const outputFile = `test-${lang}-empty-generics.json`;
+                runLSPCLI(fixture, lang, outputFile);
+                const result = readOutput(outputFile);
+
+                // Classes without generics should have undefined or empty typeParameters
+                const simpleClasses = result.symbols.filter((s) => s.name.includes('Simple') && s.kind === 'class');
+
+                simpleClasses.forEach((cls) => {
+                    if (cls.typeParameters) {
+                        expect(cls.typeParameters).toEqual([]);
+                    }
+                });
+
+                if (existsSync(outputFile)) {
+                    execSync(`rm -f ${outputFile}`);
+                }
+            });
+        });
+    });
+});
 
 function countSymbolsWithDocumentation(symbols: SymbolInfo[]): number {
     let count = 0;

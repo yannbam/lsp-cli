@@ -10,6 +10,11 @@ export interface Range {
     end: Position;
 }
 
+export interface Supertype {
+    name: string;
+    typeArguments?: string[];
+}
+
 export interface SymbolInfo {
     name: string;
     kind: string;
@@ -17,7 +22,8 @@ export interface SymbolInfo {
     range: Range;
     preview: string;
     documentation?: string;
-    supertypes?: string[];
+    typeParameters?: string[];
+    supertypes?: Supertype[];
     children?: SymbolInfo[];
     definition?: {
         file: string;

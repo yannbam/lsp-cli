@@ -70,9 +70,13 @@ The tool outputs JSON with all symbols found in the codebase:
         "start": { "line": 10, "character": 0 },
         "end": { "line": 25, "character": 1 }
       },
-      "preview": "public class MyClass {",
+      "preview": "public class MyClass<T> extends BaseClass<T> implements MyInterface {",
       "documentation": "Class documentation from JavaDoc",
-      "supertypes": ["BaseClass", "MyInterface"],
+      "typeParameters": ["T"],
+      "supertypes": [
+        { "name": "BaseClass", "typeArguments": ["T"] },
+        { "name": "MyInterface" }
+      ],
       "children": [
         {
           "name": "myMethod",
@@ -117,7 +121,8 @@ The tool outputs JSON with all symbols found in the codebase:
 **Note:** The actual structure includes:
 - `preview`: Can be a single string or array of strings
 - `children`: Nested symbols (methods, fields, etc.) instead of `members`
-- `supertypes`: Parent classes/interfaces with generic parameters stripped (optional)
+- `typeParameters`: Generic/template type parameter names (e.g., ["T", "U"]) (optional)
+- `supertypes`: Parent classes/interfaces as objects with `name` and optional `typeArguments` (optional)
 - `documentation`: JSDoc/JavaDoc comments (optional)
 - `definition`: For C/C++ declarations, links to implementation (optional)
 

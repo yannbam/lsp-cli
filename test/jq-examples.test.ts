@@ -104,7 +104,8 @@ describe('JQ Examples from llms.md', () => {
         });
 
         it('should get inheritance hierarchy', () => {
-            const query = '.symbols[] | select(.supertypes) | "\\(.name) extends \\(.supertypes | join(", "))"';
+            const query =
+                '.symbols[] | select(.supertypes) | "\\(.name) extends \\(.supertypes | map(.name) | join(", "))"';
             const result = runJQ(query, outputFiles.java);
 
             // Java LSP might not always provide supertypes, so check if we get any result
@@ -222,7 +223,7 @@ describe('JQ Examples from llms.md', () => {
 
             // Find classes that implement ServiceInterface (handle missing supertypes)
             const implementersQuery =
-                '.symbols[] | select(.kind == "class" and .supertypes and (.supertypes | index("ServiceInterface"))) | .name';
+                '.symbols[] | select(.kind == "class" and .supertypes and (.supertypes | map(.name) | index("ServiceInterface"))) | .name';
             const implementers = runJQ(implementersQuery, outputFiles.java);
             // If supertypes are provided, check for implementers
             if (implementers) {
