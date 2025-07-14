@@ -24,3 +24,6 @@ src/types.ts           # TypeScript type definitions
 src/utils.ts           # Utility functions
 test/                  # Test files and fixtures
 llms.md                # In-depth user documentation
+
+## Editor
+- Open folder: cursor
