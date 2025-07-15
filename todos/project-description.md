@@ -18,6 +18,7 @@ Command-line tool that extracts symbol information from codebases using Language
 ## Structure
 src/index.ts           # CLI entry point
 src/language-client.ts # LSP client implementation, main logic
+src/lib.ts             # Library utilities and helpers
 src/logger.ts          # Logging
 src/server-manager.ts  # LSP server management
 src/types.ts           # TypeScript type definitions
@@ -26,4 +27,4 @@ test/                  # Test files and fixtures
 llms.md                # In-depth user documentation
 
 ## Editor
-- Open folder: cursor
+- Open folder: code

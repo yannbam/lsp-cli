@@ -32,6 +32,12 @@ export interface SymbolInfo {
     };
 }
 
+export interface LspCliResult {
+    lang: SupportedLanguage;
+    directory: string;
+    symbols: SymbolInfo[];
+}
+
 export interface ToolchainCheckResult {
     installed: boolean;
     message: string;

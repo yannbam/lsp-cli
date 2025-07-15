@@ -4,7 +4,7 @@ import { Command } from 'commander';
 import { LanguageClient } from './language-client';
 import { Logger } from './logger';
 import { ServerManager } from './server-manager';
-import type { SupportedLanguage } from './types';
+import type { LspCliResult, SupportedLanguage } from './types';
 import { checkProjectFiles, checkToolchain } from './utils';
 
 const program = new Command();
@@ -121,8 +121,8 @@ program
                 await client.stop();
 
                 // Output JSON
-                const output = {
-                    language: lang,
+                const output: LspCliResult = {
+                    lang,
                     directory: dir,
                     symbols
                 };
