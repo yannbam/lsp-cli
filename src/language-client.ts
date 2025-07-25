@@ -280,6 +280,9 @@ export class LanguageClient {
                 },
                 preview,
                 documentation: this.extractDocumentation(lines, symbol.selectionRange.start.line),
+                comments: this.shouldExtractComments(symbol.kind)
+                    ? this.extractInlineComments(lines, symbol.selectionRange.start.line, symbol.range.end.line)
+                    : undefined,
                 supertypes: this.isTypeSymbol(symbol)
                     ? await this.getSupertypes(filePath, symbol.selectionRange.start)
                     : undefined,
@@ -472,6 +475,121 @@ export class LanguageClient {
         }
 
         return undefined;
+    }
+
+    /**
+     * Extracts all inline comments from within a symbol's range.
+     * This captures the developer's thinking and intentions within the function body.
+     */
+    private extractInlineComments(lines: string[], startLine: number, endLine: number): string | undefined {
+        const comments: string[] = [];
+        let inBlockComment = false;
+        let blockCommentContent = '';
+
+        for (let lineNum = startLine; lineNum <= endLine && lineNum < lines.length; lineNum++) {
+            const line = lines[lineNum];
+            const trimmedLine = line.trim();
+
+            // Skip empty lines
+            if (trimmedLine === '') continue;
+
+            // Handle block comments /* */
+            if (inBlockComment) {
+                const blockEndIndex = line.indexOf('*/');
+                if (blockEndIndex !== -1) {
+                    // End of block comment found
+                    blockCommentContent += line.substring(0, blockEndIndex);
+                    const cleanContent = this.cleanInlineBlockComment(blockCommentContent);
+                    if (cleanContent) {
+                        comments.push(cleanContent);
+                    }
+                    blockCommentContent = '';
+                    inBlockComment = false;
+
+                    // Continue processing the rest of the line after */
+                    const remainingLine = line.substring(blockEndIndex + 2);
+                    if (remainingLine.trim()) {
+                        // Recursively process the remaining part of the line
+                        const remainingComments = this.extractInlineComments([remainingLine], 0, 0);
+                        if (remainingComments) {
+                            comments.push(remainingComments);
+                        }
+                    }
+                } else {
+                    // Still inside block comment
+                    blockCommentContent += line + '\n';
+                }
+                continue;
+            }
+
+            // Look for start of block comment
+            const blockStartIndex = line.indexOf('/*');
+            if (blockStartIndex !== -1) {
+                // Check if it's a documentation comment (/** or /*!)
+                const docCheck = line.substring(blockStartIndex, blockStartIndex + 3);
+                if (docCheck === '/**' || docCheck === '/*!') {
+                    continue; // Skip documentation comments
+                }
+
+                const blockEndIndex = line.indexOf('*/', blockStartIndex + 2);
+                if (blockEndIndex !== -1) {
+                    // Single-line block comment
+                    const commentContent = line.substring(blockStartIndex + 2, blockEndIndex);
+                    const cleanContent = commentContent.trim();
+                    if (cleanContent) {
+                        comments.push(cleanContent);
+                    }
+                } else {
+                    // Multi-line block comment starts
+                    inBlockComment = true;
+                    blockCommentContent = line.substring(blockStartIndex + 2) + '\n';
+                }
+                continue;
+            }
+
+            // Handle line comments //
+            const lineCommentIndex = line.indexOf('//');
+            if (lineCommentIndex !== -1) {
+                // Check if it's a documentation comment (/// or //!)
+                const docCheck = line.substring(lineCommentIndex, lineCommentIndex + 3);
+                if (docCheck === '///' || docCheck === '//!') {
+                    continue; // Skip documentation comments
+                }
+
+                const commentContent = line.substring(lineCommentIndex + 2).trim();
+                if (commentContent) {
+                    comments.push(commentContent);
+                }
+            }
+        }
+
+        return comments.length > 0 ? comments.join('\n') : undefined;
+    }
+
+    /**
+     * Cleans content from inline block comments.
+     */
+
+    /**
+     * Determines if comments should be extracted for this symbol kind.
+     * Comments are valuable for functions, methods, constructors - anything with executable code.
+     */
+    private shouldExtractComments(symbolKind: SymbolKind): boolean {
+        return (
+            symbolKind === SymbolKind.Function ||
+            symbolKind === SymbolKind.Method ||
+            symbolKind === SymbolKind.Constructor
+        );
+    }
+
+    private cleanInlineBlockComment(content: string): string {
+        return content
+            .split('\n')
+            .map((line) => line.trim())
+            .map((line) => line.replace(/^\*+\s*/, '')) // Remove leading asterisks
+            .filter((line) => line.length > 0)
+            .join('\n')
+            .trim();
     }
 
     private cleanBlockDocumentation(docLines: string[]): string {
@@ -738,7 +856,7 @@ export class LanguageClient {
             csharp: ['.cs'],
             haxe: ['.hx'],
             dart: ['.dart'],
-            typescript: ['.ts', '.tsx']
+            typescript: ['.ts', '.tsx', '.js']
         };
 
         const extensions = extensionMap[this.language];
