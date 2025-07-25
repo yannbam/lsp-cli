@@ -478,6 +478,37 @@ export class LanguageClient {
     }
 
     /**
+     * Checks if a given position in a line is inside a string literal.
+     * Handles single quotes, double quotes, template literals, and escaped quotes.
+     */
+    private isInsideStringLiteral(line: string, position: number): boolean {
+        let inSingleQuote = false;
+        let inDoubleQuote = false;
+        let inTemplateQuote = false;
+        
+        for (let i = 0; i < position; i++) {
+            const char = line[i];
+            const prevChar = i > 0 ? line[i - 1] : '';
+            
+            // Skip escaped quotes
+            if (prevChar === '\\') {
+                continue;
+            }
+            
+            // Toggle quote states
+            if (char === "'" && !inDoubleQuote && !inTemplateQuote) {
+                inSingleQuote = !inSingleQuote;
+            } else if (char === '"' && !inSingleQuote && !inTemplateQuote) {
+                inDoubleQuote = !inDoubleQuote;
+            } else if (char === '`' && !inSingleQuote && !inDoubleQuote) {
+                inTemplateQuote = !inTemplateQuote;
+            }
+        }
+        
+        return inSingleQuote || inDoubleQuote || inTemplateQuote;
+    }
+
+    /**
      * Extracts all inline comments from within a symbol's range.
      * Groups consecutive comment-only lines together, keeps end-of-line comments separate.
      * This captures the developer's thinking and intentions within the function body.
@@ -540,7 +571,7 @@ export class LanguageClient {
             let commentContent = '';
             
             // Determine if line has code before comments
-            if (lineCommentIndex !== -1) {
+            if (lineCommentIndex !== -1 && !this.isInsideStringLiteral(line, lineCommentIndex)) {
                 // Check if it's a documentation comment
                 const docCheck = line.substring(lineCommentIndex, lineCommentIndex + 3);
                 if (docCheck === '///' || docCheck === '//!') {
@@ -550,7 +581,7 @@ export class LanguageClient {
                 const beforeComment = line.substring(0, lineCommentIndex).trim();
                 hasCode = beforeComment.length > 0;
                 commentContent = line.substring(lineCommentIndex + 2).trim();
-            } else if (blockStartIndex !== -1) {
+            } else if (blockStartIndex !== -1 && !this.isInsideStringLiteral(line, blockStartIndex)) {
                 // Check if it's a documentation comment
                 const docCheck = line.substring(blockStartIndex, blockStartIndex + 3);
                 if (docCheck === '/**' || docCheck === '/*!') {
