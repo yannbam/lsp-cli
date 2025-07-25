@@ -16,6 +16,7 @@ lines making up a symbol like a method. This MUST be preferred to reading full f
 6. **API Evolution**: Track changes between versions
 7. **Language Porting**: Map constructs between languages
 8. **Code Review**: Find complex methods and classes
+9. **Intent Analysis**: Understand developer thinking through inline comments
 
 ## Generating the JSON files
 
@@ -58,6 +59,7 @@ lsp-cli <directory> <language> <output-file>
   },
   "preview": "string" | ["string"],  // Code preview (string or array of lines)
   "documentation": "string",         // Optional: JSDoc/JavaDoc/Doxygen/etc. comments
+  "comments": "string",              // Optional: inline comments from within function bodies
   "supertypes": ["string"],         // Optional: parent classes/interfaces
   "children": [],                    // Optional: nested symbols (methods, fields, inner classes etc.)
   "definition": {                    // Optional: for C/C++ declarations in headers
@@ -228,6 +230,11 @@ jq -r '.symbols[] | select(.kind == "class") |
 jq -r '.symbols[] | .. | objects |
     select(.name == "processOrder" and .kind == "method") |
     "\(.file):\(.range.start.line + 1)-\(.range.end.line + 1)"' symbols.json
+
+# For intent analysis: Find functions with specific comment patterns
+jq -r '.symbols[] | .. | objects |
+    select(.comments and (.comments | contains("TODO") or contains("FIXME"))) |
+    "\(.name): \(.comments)"' symbols.json
 ```
 
 ### Navigation Workflow Example
