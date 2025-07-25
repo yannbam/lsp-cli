@@ -37,10 +37,10 @@ describe('Comment Extraction Tests', () => {
 
         // Should contain end-of-line comments but NOT string contents
         expect(comments).toContain('Validate user input');
-        
+
         // Verify bug fix: should NOT contain comments that were inside strings
-        expect(comments.every(c => !c.includes('This should not trigger comment detection'))).toBe(true);
-        expect(comments.every(c => !c.includes('file://path/to/file'))).toBe(true);
+        expect(comments.every((c) => !c.includes('This should not trigger comment detection'))).toBe(true);
+        expect(comments.every((c) => !c.includes('file://path/to/file'))).toBe(true);
 
         // Should contain single-line block comments
         expect(comments).toContain('Single-line block comment');
@@ -56,8 +56,6 @@ describe('Comment Extraction Tests', () => {
         // Verify grouped vs separate comments
         expect(comments).toContain('Consecutive comment lines\nshould be grouped together\nas a single block');
         expect(comments).toContain('But this end-of-line comment stays separate');
-
-        console.log('✅ TypeScript comment extraction verified');
     });
 
     /**
@@ -91,11 +89,9 @@ describe('Comment Extraction Tests', () => {
         expect(comments).toContain('Validate user input');
         expect(comments).toContain('Single-line block comment');
 
-        // Verify bug fix: string literals with comment symbols are correctly excluded  
+        // Verify bug fix: string literals with comment symbols are correctly excluded
         expect(comments.every((c) => !c.includes('This should not trigger comment detection'))).toBe(true);
         expect(comments.every((c) => !c.includes('file://path/to/file'))).toBe(true);
-
-        console.log('✅ Java comment extraction verified');
     });
 
     /**
@@ -118,14 +114,12 @@ describe('Comment Extraction Tests', () => {
 
         // C functions should have comments extracted
         const testStringUtils = findSymbolByName(symbols, 'test_string_utils');
-        if (testStringUtils && testStringUtils.comments) {
+        if (testStringUtils?.comments) {
             const comments = testStringUtils.comments;
 
             // Verify C-style comments are captured
             expect(comments.some((c) => c.includes('Test string'))).toBe(true);
         }
-
-        console.log('✅ C comment extraction verified');
     });
 });
 
