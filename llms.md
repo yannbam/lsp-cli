@@ -59,7 +59,7 @@ lsp-cli <directory> <language> <output-file>
   },
   "preview": "string" | ["string"],  // Code preview (string or array of lines)
   "documentation": "string",         // Optional: JSDoc/JavaDoc/Doxygen/etc. comments
-  "comments": "string",              // Optional: inline comments from within function bodies
+  "comments": ["string"],            // Optional: array of inline comments from within function bodies
   "supertypes": ["string"],         // Optional: parent classes/interfaces
   "children": [],                    // Optional: nested symbols (methods, fields, inner classes etc.)
   "definition": {                    // Optional: for C/C++ declarations in headers
@@ -233,8 +233,40 @@ jq -r '.symbols[] | .. | objects |
 
 # For intent analysis: Find functions with specific comment patterns
 jq -r '.symbols[] | .. | objects |
-    select(.comments and (.comments | contains("TODO") or contains("FIXME"))) |
-    "\(.name): \(.comments)"' symbols.json
+    select(.comments and (.comments[] | contains("TODO") or contains("FIXME"))) |
+    "\(.name): \(.comments | join("; "))"' symbols.json
+
+# Find functions with many inline comments (high documentation)
+jq -r '.symbols[] | .. | objects |
+    select(.comments and (.comments | length) > 3) |
+    "\(.name): \(.comments | length) comments"' symbols.json
+
+# Extract all unique comment patterns
+jq -r '.symbols[] | .. | objects | .comments[]?' symbols.json | sort | uniq
+```
+
+### Comments Array Queries
+
+The `comments` field contains an array of inline comments found within function bodies, enabling powerful intent analysis:
+
+```bash
+# Find functions with specific comment patterns  
+jq -r '.symbols[] | .. | objects |
+    select(.comments[]? | test("TODO|FIXME|HACK"; "i")) |
+    "\(.name) in \(.file | split("/") | last)"' symbols.json
+
+# Get all comments from a specific function
+jq -r '.symbols[] | .. | objects |
+    select(.name == "processOrder") | .comments[]?' symbols.json
+
+# Find functions with step-by-step comments (indicating clear thinking)
+jq -r '.symbols[] | .. | objects |
+    select(.comments and (.comments | length) > 2) |
+    {name, steps: .comments}' symbols.json
+
+# Extract implementation patterns from comments
+jq -r '.symbols[] | .. | objects | .comments[]? |
+    select(test("validate|check|process|handle"; "i"))' symbols.json
 ```
 
 ### Navigation Workflow Example

@@ -87,7 +87,7 @@ The tool outputs JSON with all symbols found in the codebase:
             "    return result;",
             "}"
           ],
-          "comments": "Method implementation\nreturn result"
+          "comments": ["Method implementation", "return result"]
         },
         {
           "name": "InnerClass",
@@ -120,7 +120,7 @@ The tool outputs JSON with all symbols found in the codebase:
 - `children`: Nested symbols (methods, fields, etc.) instead of `members`
 - `supertypes`: Parent classes/interfaces (optional)
 - `documentation`: JSDoc/JavaDoc comments (optional)
-- `comments`: Inline comments from within function bodies (optional)
+- `comments`: Array of inline comments from within function bodies (optional)
 - `definition`: For C/C++ declarations, links to implementation (optional)
 
 ## Requirements
