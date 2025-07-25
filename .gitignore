@@ -4,6 +4,3 @@ dist
 *.log
 test-*.json
 **/.test-repos/**
-.lsp.json
-pnpm-lock.yaml
-pnpm-workspace.yaml

@@ -13,6 +13,7 @@ import {
     InitializeRequest,
     type Location,
     type Position as LSPPosition,
+    type Range as LSPRange,
     type MessageConnection,
     ShutdownRequest,
     StreamMessageReader,
@@ -37,6 +38,7 @@ export class LanguageClient {
 
     constructor(
         private language: SupportedLanguage,
+        private serverPath: string,
         private workspaceRoot: string,
         private logger: Logger
     ) {
@@ -229,6 +231,20 @@ export class LanguageClient {
 
         const symbols = await Promise.race([symbolsPromise, timeoutPromise]);
 
+        // Debug logging for C#
+        if (this.language === 'csharp') {
+            console.log(
+                `[DEBUG] Document symbols response for ${filePath}:`,
+                symbols === null
+                    ? 'null'
+                    : symbols === undefined
+                      ? 'undefined'
+                      : Array.isArray(symbols)
+                        ? `array of ${symbols.length}`
+                        : typeof symbols
+            );
+        }
+
         if (!symbols || (Array.isArray(symbols) && symbols.length === 0)) {
             return [];
         }
@@ -291,6 +307,14 @@ export class LanguageClient {
         }
 
         return allSymbols;
+    }
+
+    private getPreviewLines(lines: string[], range: LSPRange): string[] {
+        const startLine = range.start.line;
+        const previewStart = Math.max(0, startLine - 2);
+        const previewEnd = Math.min(lines.length, startLine + 3);
+
+        return lines.slice(previewStart, previewEnd);
     }
 
     private async getDefinition(
@@ -923,7 +947,7 @@ export class LanguageClient {
             csharp: ['.cs'],
             haxe: ['.hx'],
             dart: ['.dart'],
-            typescript: ['.ts', '.tsx', '.js']
+            typescript: ['.ts', '.tsx']
         };
 
         const extensions = extensionMap[this.language];
