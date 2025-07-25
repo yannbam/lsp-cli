@@ -482,15 +482,21 @@ export class LanguageClient {
      * Handles single quotes, double quotes, template literals, and escaped quotes.
      */
     private isInsideStringLiteral(line: string, position: number): boolean {
-        const inSingleQuote = false;
-        const inDoubleQuote = false;
-        const inTemplateQuote = false;
+        let inSingleQuote = false;
+        let inDoubleQuote = false;
+        let inTemplateQuote = false;
         let inRawString = false;
         let _rawStringDelimiter = '';
 
         for (let i = 0; i < position; i++) {
             const char = line[i];
             const prevChar = i > 0 ? line[i - 1] : '';
+            
+            // Skip escaped characters
+            if (prevChar === '\\') {
+                continue;
+            }
+
             const nextChar = i + 1 < line.length ? line[i + 1] : '';
 
             // Handle C++ raw strings R"delimiter(content)delimiter"
@@ -513,8 +519,21 @@ export class LanguageClient {
 
             // Handle end of raw string
             if (inRawString) {
-                // Implementation would check for raw string end pattern
-                // For now, skip raw string handling
+                // Check for end pattern: )delimiter"
+                if (char === ')' && line.substring(i + 1).startsWith(_rawStringDelimiter + '"')) {
+                    inRawString = false;
+                    i += _rawStringDelimiter.length + 1; // Skip past )delimiter"
+                }
+                continue;
+            }
+
+            // Toggle quote states for regular strings
+            if (char === "'" && !inDoubleQuote && !inTemplateQuote && !inRawString) {
+                inSingleQuote = !inSingleQuote;
+            } else if (char === '"' && !inSingleQuote && !inTemplateQuote && !inRawString) {
+                inDoubleQuote = !inDoubleQuote;
+            } else if (char === '`' && !inSingleQuote && !inDoubleQuote && !inRawString) {
+                inTemplateQuote = !inTemplateQuote;
             }
         }
 

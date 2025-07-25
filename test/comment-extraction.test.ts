@@ -35,9 +35,12 @@ describe('Comment Extraction Tests', () => {
         // Should contain grouped consecutive comments
         expect(comments).toContain('Step 1: Basic validation\nStep 2: Process data');
 
-        // Should contain end-of-line comments (note: currently has bug with string detection)
-        expect(comments.some((c) => c.includes('This should not trigger comment detection'))).toBe(true);
+        // Should contain end-of-line comments but NOT string contents
         expect(comments).toContain('Validate user input');
+        
+        // Verify bug fix: should NOT contain comments that were inside strings
+        expect(comments.every(c => !c.includes('This should not trigger comment detection'))).toBe(true);
+        expect(comments.every(c => !c.includes('file://path/to/file'))).toBe(true);
 
         // Should contain single-line block comments
         expect(comments).toContain('Single-line block comment');
@@ -88,8 +91,9 @@ describe('Comment Extraction Tests', () => {
         expect(comments).toContain('Validate user input');
         expect(comments).toContain('Single-line block comment');
 
-        // Verify string literals with comment symbols are excluded
-        expect(comments.every((c) => !c.includes('escaped quote and comment'))).toBe(true);
+        // Verify bug fix: string literals with comment symbols are correctly excluded  
+        expect(comments.every((c) => !c.includes('This should not trigger comment detection'))).toBe(true);
+        expect(comments.every((c) => !c.includes('file://path/to/file'))).toBe(true);
 
         console.log('✅ Java comment extraction verified');
     });
