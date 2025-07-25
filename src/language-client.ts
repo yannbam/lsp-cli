@@ -481,7 +481,7 @@ export class LanguageClient {
      * Extracts all inline comments from within a symbol's range.
      * This captures the developer's thinking and intentions within the function body.
      */
-    private extractInlineComments(lines: string[], startLine: number, endLine: number): string | undefined {
+    private extractInlineComments(lines: string[], startLine: number, endLine: number): string[] | undefined {
         const comments: string[] = [];
         let inBlockComment = false;
         let blockCommentContent = '';
@@ -512,7 +512,7 @@ export class LanguageClient {
                         // Recursively process the remaining part of the line
                         const remainingComments = this.extractInlineComments([remainingLine], 0, 0);
                         if (remainingComments) {
-                            comments.push(remainingComments);
+                            comments.push(...remainingComments);
                         }
                     }
                 } else {
@@ -563,7 +563,7 @@ export class LanguageClient {
             }
         }
 
-        return comments.length > 0 ? comments.join('\n') : undefined;
+        return comments.length > 0 ? comments : undefined;
     }
 
     /**

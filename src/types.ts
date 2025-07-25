@@ -17,7 +17,7 @@ export interface SymbolInfo {
     range: Range;
     preview: string;
     documentation?: string;
-    comments?: string;
+    comments?: string[];
     supertypes?: string[];
     children?: SymbolInfo[];
     definition?: {
