@@ -280,6 +280,9 @@ export class LanguageClient {
                 },
                 preview,
                 documentation: this.extractDocumentation(lines, symbol.selectionRange.start.line),
+                comments: this.shouldExtractComments(symbol.kind)
+                    ? this.extractInlineComments(lines, symbol.selectionRange.start.line, symbol.range.end.line)
+                    : undefined,
                 supertypes: this.isTypeSymbol(symbol)
                     ? await this.getSupertypes(filePath, symbol.selectionRange.start)
                     : undefined,
@@ -472,6 +475,212 @@ export class LanguageClient {
         }
 
         return undefined;
+    }
+
+    /**
+     * Checks if a given position in a line is inside a string literal.
+     * Handles single quotes, double quotes, template literals, and escaped quotes.
+     */
+    private isInsideStringLiteral(line: string, position: number): boolean {
+        let inSingleQuote = false;
+        let inDoubleQuote = false;
+        let inTemplateQuote = false;
+        let inRawString = false;
+        let _rawStringDelimiter = '';
+
+        for (let i = 0; i < position; i++) {
+            const char = line[i];
+            const prevChar = i > 0 ? line[i - 1] : '';
+
+            // Skip escaped characters
+            if (prevChar === '\\') {
+                continue;
+            }
+
+            const nextChar = i + 1 < line.length ? line[i + 1] : '';
+
+            // Handle C++ raw strings R"delimiter(content)delimiter"
+            if (!inSingleQuote && !inDoubleQuote && !inTemplateQuote && !inRawString) {
+                // Check for start of raw string: R"
+                if (char === 'R' && nextChar === '"' && (i === 0 || !/[a-zA-Z0-9_]/.test(prevChar))) {
+                    // Find the delimiter
+                    let delimiterEnd = i + 2;
+                    while (delimiterEnd < line.length && line[delimiterEnd] !== '(') {
+                        delimiterEnd++;
+                    }
+                    if (delimiterEnd < line.length) {
+                        _rawStringDelimiter = line.substring(i + 2, delimiterEnd);
+                        inRawString = true;
+                        i = delimiterEnd; // Skip to after the opening (
+                        continue;
+                    }
+                }
+            }
+
+            // Handle end of raw string
+            if (inRawString) {
+                // Check for end pattern: )delimiter"
+                if (char === ')' && line.substring(i + 1).startsWith(`${_rawStringDelimiter}"`)) {
+                    inRawString = false;
+                    i += _rawStringDelimiter.length + 1; // Skip past )delimiter"
+                }
+                continue;
+            }
+
+            // Toggle quote states for regular strings
+            if (char === "'" && !inDoubleQuote && !inTemplateQuote && !inRawString) {
+                inSingleQuote = !inSingleQuote;
+            } else if (char === '"' && !inSingleQuote && !inTemplateQuote && !inRawString) {
+                inDoubleQuote = !inDoubleQuote;
+            } else if (char === '`' && !inSingleQuote && !inDoubleQuote && !inRawString) {
+                inTemplateQuote = !inTemplateQuote;
+            }
+        }
+
+        return inSingleQuote || inDoubleQuote || inTemplateQuote || inRawString;
+    }
+
+    /**
+     * Extracts all inline comments from within a symbol's range.
+     * Groups consecutive comment-only lines together, keeps end-of-line comments separate.
+     * This captures the developer's thinking and intentions within the function body.
+     */
+    private extractInlineComments(lines: string[], startLine: number, endLine: number): string[] | undefined {
+        const comments: string[] = [];
+        let currentCommentBlock: string[] = [];
+        let inBlockComment = false;
+        let blockCommentContent = '';
+
+        const finalizeCurrentBlock = () => {
+            if (currentCommentBlock.length > 0) {
+                comments.push(currentCommentBlock.join('\n'));
+                currentCommentBlock = [];
+            }
+        };
+
+        for (let lineNum = startLine; lineNum <= endLine && lineNum < lines.length; lineNum++) {
+            const line = lines[lineNum];
+            const trimmedLine = line.trim();
+
+            // Skip empty lines
+            if (trimmedLine === '') continue;
+
+            // Handle ongoing block comments
+            if (inBlockComment) {
+                const blockEndIndex = line.indexOf('*/');
+                if (blockEndIndex !== -1) {
+                    // End of block comment found
+                    blockCommentContent += line.substring(0, blockEndIndex);
+                    const cleanContent = this.cleanInlineBlockComment(blockCommentContent);
+                    if (cleanContent) {
+                        currentCommentBlock.push(cleanContent);
+                    }
+                    blockCommentContent = '';
+                    inBlockComment = false;
+
+                    // Continue processing the rest of the line after */
+                    const remainingLine = line.substring(blockEndIndex + 2);
+                    if (remainingLine.trim()) {
+                        const remainingComments = this.extractInlineComments([remainingLine], 0, 0);
+                        if (remainingComments) {
+                            // If remaining line has more content, finalize current block and add remaining
+                            finalizeCurrentBlock();
+                            comments.push(...remainingComments);
+                        }
+                    }
+                } else {
+                    // Still inside block comment
+                    blockCommentContent += `${line}\n`;
+                }
+                continue;
+            }
+
+            // Check if this is a comment-only line or has code + comment
+            const lineCommentIndex = line.indexOf('//');
+            const blockStartIndex = line.indexOf('/*');
+
+            let hasCode = false;
+            let commentContent = '';
+
+            // Determine if line has code before comments
+            if (lineCommentIndex !== -1 && !this.isInsideStringLiteral(line, lineCommentIndex)) {
+                // Check if it's a documentation comment
+                const docCheck = line.substring(lineCommentIndex, lineCommentIndex + 3);
+                if (docCheck === '///' || docCheck === '//!') {
+                    continue; // Skip documentation comments
+                }
+
+                const beforeComment = line.substring(0, lineCommentIndex).trim();
+                hasCode = beforeComment.length > 0;
+                commentContent = line.substring(lineCommentIndex + 2).trim();
+            } else if (blockStartIndex !== -1 && !this.isInsideStringLiteral(line, blockStartIndex)) {
+                // Check if it's a documentation comment
+                const docCheck = line.substring(blockStartIndex, blockStartIndex + 3);
+                if (docCheck === '/**' || docCheck === '/*!') {
+                    continue; // Skip documentation comments
+                }
+
+                const beforeComment = line.substring(0, blockStartIndex).trim();
+                hasCode = beforeComment.length > 0;
+
+                const blockEndIndex = line.indexOf('*/', blockStartIndex + 2);
+                if (blockEndIndex !== -1) {
+                    // Single-line block comment
+                    commentContent = line.substring(blockStartIndex + 2, blockEndIndex).trim();
+                } else {
+                    // Multi-line block comment starts
+                    inBlockComment = true;
+                    blockCommentContent = `${line.substring(blockStartIndex + 2)}\n`;
+                    continue;
+                }
+            } else {
+                // No comments on this line, just finalize any current block
+                finalizeCurrentBlock();
+                continue;
+            }
+
+            if (commentContent) {
+                if (hasCode) {
+                    // End-of-line comment: finalize current block and add as separate comment
+                    finalizeCurrentBlock();
+                    comments.push(commentContent);
+                } else {
+                    // Comment-only line: add to current block
+                    currentCommentBlock.push(commentContent);
+                }
+            }
+        }
+
+        // Finalize any remaining comment block
+        finalizeCurrentBlock();
+
+        return comments.length > 0 ? comments : undefined;
+    }
+
+    /**
+     * Cleans content from inline block comments.
+     */
+
+    /**
+     * Determines if comments should be extracted for this symbol kind.
+     * Comments are valuable for functions, methods, constructors - anything with executable code.
+     */
+    private shouldExtractComments(symbolKind: SymbolKind): boolean {
+        return (
+            symbolKind === SymbolKind.Function ||
+            symbolKind === SymbolKind.Method ||
+            symbolKind === SymbolKind.Constructor
+        );
+    }
+
+    private cleanInlineBlockComment(content: string): string {
+        return content
+            .split('\n')
+            .map((line) => line.trim())
+            .map((line) => line.replace(/^\*+\s*/, '')) // Remove leading asterisks
+            .filter((line) => line.length > 0)
+            .join('\n')
+            .trim();
     }
 
     private cleanBlockDocumentation(docLines: string[]): string {
