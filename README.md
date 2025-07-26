@@ -53,6 +53,34 @@ npx tsx src/index.ts /path/to/java/project java types.json -v
 lsp-cli --llm
 ```
 
+## lsp-cli-jq Wrapper
+
+A convenience wrapper that automatically analyzes the current directory and runs jq queries on the results.
+
+### Usage
+```bash
+lsp-cli-jq <language> <jq_query>
+```
+
+### Examples
+```bash
+# Find all class names in a TypeScript project
+lsp-cli-jq typescript '.symbols[] | select(.kind == "class") | .name'
+
+# Get file locations of all methods in a Java project
+lsp-cli-jq java '.symbols[] | .. | objects | select(.kind == "method") | "\(.file):\(.range.start.line + 1)"'
+
+# Find functions with TODO comments
+lsp-cli-jq typescript '.symbols[] | .. | objects | select(.comments[]? | contains("TODO")) | .name'
+```
+
+The wrapper automatically:
+- Analyzes the current working directory
+- Generates temporary JSON files with cleanup
+- Forwards jq queries to the analysis results
+
+Use `lsp-cli-jq --help` for more information and comprehensive examples.
+
 ## Output
 
 The tool outputs JSON with all symbols found in the codebase:
