@@ -738,7 +738,7 @@ export class LanguageClient {
             csharp: ['.cs'],
             haxe: ['.hx'],
             dart: ['.dart'],
-            typescript: ['.ts', '.tsx']
+            typescript: ['.ts', '.tsx', '.js']
         };
 
         const extensions = extensionMap[this.language];
