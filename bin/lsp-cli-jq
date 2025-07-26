@@ -10,10 +10,14 @@ if [[ $# -eq 0 || "$1" == "--help" || "$1" == "-h" ]]; then
     echo "lsp-cli-jq - Wrapper script for lsp-cli that automatically analyzes the current directory"
     echo
     echo "Usage: lsp-cli-jq <language> <jq_query>"
+    echo "       lsp-cli-jq --help"
     echo
     echo "Arguments:"
     echo "  language   Programming language (java, cpp, c, csharp, haxe, typescript, dart)"
     echo "  jq_query   JQ query to run on the analysis results"
+    echo
+    echo "Options:"
+    echo "  --help, -h Show this help message and full lsp-cli documentation"
     echo
     echo "Examples:"
     echo "  lsp-cli-jq typescript '.symbols[] | select(.kind == \"class\") | .name'"
