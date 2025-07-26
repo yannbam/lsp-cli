@@ -50,7 +50,6 @@ cleanup() {
 trap cleanup EXIT
 
 # Run lsp-cli (suppress stdout, show stderr for errors)
-echo "Analyzing current directory with lsp-cli..." >&2
 if ! lsp-cli . "$language" "$temp_file" >/dev/null; then
     echo "Error: lsp-cli analysis failed" >&2
     exit 1
