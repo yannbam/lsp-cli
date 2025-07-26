@@ -4,11 +4,12 @@
     "description": "CLI tool to extract types from codebases using LSP servers",
     "main": "dist/index.js",
     "bin": {
-        "lsp-cli": "dist/index.js"
+        "lsp-cli": "dist/index.js",
+        "lsp-cli-jq": "dist/lsp-cli-jq"
     },
     "scripts": {
         "start": "tsx src/index.ts",
-        "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js && cp llms.md dist/",
+        "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js && cp llms.md dist/ && cp bin/lsp-cli-jq dist/ && chmod +x dist/lsp-cli-jq",
         "typecheck": "tsc --noEmit",
         "lint": "biome check --write . --error-on-warnings",
         "format": "biome format --write .",
