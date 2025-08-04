@@ -65,9 +65,10 @@ export async function checkToolchain(language: SupportedLanguage): Promise<Toolc
                     await execAsync('cargo --version');
                     return { installed: true, message: 'Rust toolchain found (rustc + cargo)' };
                 } catch {
-                    return { 
-                        installed: false, 
-                        message: 'Rust toolchain incomplete. Both rustc and cargo are required.\nInstall from https://rustup.rs/' 
+                    return {
+                        installed: false,
+                        message:
+                            'Rust toolchain incomplete. Both rustc and cargo are required.\nInstall from https://rustup.rs/'
                     };
                 }
 
