@@ -18,6 +18,7 @@ import {
     ShutdownRequest,
     StreamMessageReader,
     StreamMessageWriter,
+    type SymbolInformation,
     SymbolKind,
     type TextDocumentItem,
     type TypeHierarchyItem,
@@ -222,10 +223,10 @@ export class LanguageClient {
 
         // Add timeout to prevent hanging
         const symbolsPromise = this.connection.sendRequest(DocumentSymbolRequest.type, params) as Promise<
-            DocumentSymbol[]
+            DocumentSymbol[] | SymbolInformation[]
         >;
 
-        const timeoutPromise = new Promise<DocumentSymbol[]>((_, reject) => {
+        const timeoutPromise = new Promise<DocumentSymbol[] | SymbolInformation[]>((_, reject) => {
             setTimeout(() => reject(new Error('Document symbol request timed out after 10s')), 10000);
         });
 
@@ -252,53 +253,60 @@ export class LanguageClient {
         return await this.extractSymbols(symbols, filePath, lines);
     }
 
-    private async extractSymbols(symbols: DocumentSymbol[], filePath: string, lines: string[]): Promise<SymbolInfo[]> {
+    private async extractSymbols(
+        symbols: DocumentSymbol[] | SymbolInformation[],
+        filePath: string,
+        lines: string[]
+    ): Promise<SymbolInfo[]> {
         const allSymbols: SymbolInfo[] = [];
 
-        for (const symbol of symbols) {
-            // For C/C++, check if this is a forward declaration or friend declaration
-            const preview = lines[symbol.selectionRange.start.line]?.trim() || '';
-            const isForwardDeclaration = preview.match(/^\s*(class|struct)\s+\w+\s*;\s*$/);
-            const isFriendDeclaration = preview.includes('friend class') || preview.includes('friend struct');
+        // Check if we got SymbolInformation[] or DocumentSymbol[]
+        if (symbols.length === 0) {
+            return allSymbols;
+        }
 
-            // Skip forward declarations and friend declarations for C/C++
-            if ((this.language === 'cpp' || this.language === 'c') && (isForwardDeclaration || isFriendDeclaration)) {
-                continue;
-            }
+        const firstSymbol = symbols[0];
+        const isSymbolInformation = 'location' in firstSymbol;
 
-            // Extract ALL symbols, not just types
-            const symbolInfo: SymbolInfo = {
-                name: this.cleanSymbolName(symbol.name),
-                kind: this.getSymbolKindName(symbol.kind),
-                file: filePath,
-                range: {
-                    start: {
-                        line: symbol.selectionRange.start.line,
-                        character: 0
+        if (isSymbolInformation) {
+            // Handle SymbolInformation[] format (flat structure)
+            const symbolInfos = symbols as SymbolInformation[];
+            for (const symbol of symbolInfos) {
+                const symbolInfo: SymbolInfo = {
+                    name: this.cleanSymbolName(symbol.name),
+                    kind: this.getSymbolKindName(symbol.kind),
+                    file: filePath,
+                    range: {
+                        start: {
+                            line: symbol.location.range.start.line,
+                            character: 0
+                        },
+                        end: this.convertPosition(symbol.location.range.end)
                     },
-                    end: this.convertPosition(symbol.range.end)
-                },
-                preview,
-                documentation: this.extractDocumentation(lines, symbol.selectionRange.start.line),
-                comments: this.shouldExtractComments(symbol.kind)
-                    ? this.extractInlineComments(lines, symbol.selectionRange.start.line, symbol.range.end.line)
-                    : undefined,
-                supertypes: this.isTypeSymbol(symbol)
-                    ? await this.getSupertypes(filePath, symbol.selectionRange.start)
-                    : undefined,
-                children: symbol.children ? await this.extractSymbols(symbol.children, filePath, lines) : undefined
-            };
+                    preview: lines[symbol.location.range.start.line]?.trim() || '',
+                    documentation: this.extractDocumentation(lines, symbol.location.range.start.line),
+                    comments: this.shouldExtractComments(symbol.kind)
+                        ? this.extractInlineComments(
+                              lines,
+                              symbol.location.range.start.line,
+                              symbol.location.range.end.line
+                          )
+                        : undefined,
+                    supertypes:
+                        symbol.kind === SymbolKind.Class || symbol.kind === SymbolKind.Interface
+                            ? await this.getSupertypes(filePath, symbol.location.range.start)
+                            : undefined,
+                    children: undefined // SymbolInformation doesn't have hierarchical children
+                };
 
-            // For C/C++ header files, try to find the definition in .cpp files
-            if (
-                (this.language === 'cpp' || this.language === 'c') &&
-                (filePath.endsWith('.h') || filePath.endsWith('.hpp')) &&
-                (symbol.kind === SymbolKind.Method || symbol.kind === SymbolKind.Function)
-            ) {
-                symbolInfo.definition = await this.getDefinition(filePath, symbol.selectionRange.start);
+                allSymbols.push(symbolInfo);
             }
-
-            allSymbols.push(symbolInfo);
+        } else {
+            // Handle DocumentSymbol[] format (hierarchical structure)
+            const documentSymbols = symbols as DocumentSymbol[];
+            for (const symbol of documentSymbols) {
+                await this.extractDocumentSymbol(symbol, filePath, lines, allSymbols);
+            }
         }
 
         // Post-process C/C++ anonymous structs with typedef names
@@ -307,6 +315,71 @@ export class LanguageClient {
         }
 
         return allSymbols;
+    }
+
+    /**
+     * Recursively extract symbols from DocumentSymbol format
+     */
+    private async extractDocumentSymbol(
+        symbol: DocumentSymbol,
+        filePath: string,
+        lines: string[],
+        allSymbols: SymbolInfo[]
+    ): Promise<void> {
+        // For C/C++, check if this is a forward declaration or friend declaration
+        const preview = lines[symbol.selectionRange.start.line]?.trim() || '';
+        const isForwardDeclaration = preview.match(/^\s*(class|struct)\s+\w+\s*;\s*$/);
+        const isFriendDeclaration = preview.includes('friend class') || preview.includes('friend struct');
+
+        // Skip forward declarations and friend declarations for C/C++
+        if ((this.language === 'cpp' || this.language === 'c') && (isForwardDeclaration || isFriendDeclaration)) {
+            return;
+        }
+
+        // Extract the symbol
+        const symbolInfo: SymbolInfo = {
+            name: this.cleanSymbolName(symbol.name),
+            kind: this.getSymbolKindName(symbol.kind),
+            file: filePath,
+            range: {
+                start: {
+                    line: symbol.selectionRange.start.line,
+                    character: 0
+                },
+                end: this.convertPosition(symbol.range.end)
+            },
+            preview,
+            documentation: this.extractDocumentation(lines, symbol.selectionRange.start.line),
+            comments: this.shouldExtractComments(symbol.kind)
+                ? this.extractInlineComments(lines, symbol.selectionRange.start.line, symbol.range.end.line)
+                : undefined,
+            supertypes: this.isTypeSymbol(symbol)
+                ? await this.getSupertypes(filePath, symbol.selectionRange.start)
+                : undefined,
+            children: undefined // Will be populated by recursive calls
+        };
+
+        // For C/C++ header files, try to find the definition in .cpp files
+        if (
+            (this.language === 'cpp' || this.language === 'c') &&
+            (filePath.endsWith('.h') || filePath.endsWith('.hpp')) &&
+            (symbol.kind === SymbolKind.Method || symbol.kind === SymbolKind.Function)
+        ) {
+            symbolInfo.definition = await this.getDefinition(filePath, symbol.selectionRange.start);
+        }
+
+        allSymbols.push(symbolInfo);
+
+        // Recursively process children
+        if (symbol.children) {
+            const childSymbols: SymbolInfo[] = [];
+            for (const child of symbol.children) {
+                await this.extractDocumentSymbol(child, filePath, lines, childSymbols);
+            }
+            if (childSymbols.length > 0) {
+                symbolInfo.children = childSymbols;
+            }
+        }
     }
 
     private getPreviewLines(lines: string[], range: LSPRange): string[] {
@@ -935,7 +1008,8 @@ export class LanguageClient {
             haxe: 'haxe',
             typescript: 'typescript',
             dart: 'dart',
-            rust: 'rust'
+            rust: 'rust',
+            python: 'python'
         };
         return languageMap[this.language];
     }
@@ -949,7 +1023,8 @@ export class LanguageClient {
             haxe: ['.hx'],
             dart: ['.dart'],
             typescript: ['.ts', '.tsx', '.js'],
-            rust: ['.rs']
+            rust: ['.rs'],
+            python: ['.py', '.pyi']
         };
 
         const extensions = extensionMap[this.language];

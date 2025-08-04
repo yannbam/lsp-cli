@@ -39,6 +39,8 @@ lsp-cli <directory> <language> <output-file>
 - `haxe` - Haxe (requires Haxe compiler)
 - `typescript` - TypeScript (requires Node.js)
 - `dart` - Dart (requires Dart SDK)
+- `rust` - Rust (requires Rust toolchain)
+- `python` - Python (requires Python 3.7+ with pip)
 
 ### Example
 
@@ -161,6 +163,8 @@ Each language requires its toolchain installed:
 - Haxe: Haxe compiler
 - TypeScript: Node.js
 - Dart: Dart SDK
+- Rust: Rust toolchain (rustc + cargo)
+- Python: Python 3.7+ with pip
 
 ### Project Files
 For best results, projects should have proper configuration:
@@ -170,6 +174,8 @@ For best results, projects should have proper configuration:
 - Haxe: `build.hxml` or `haxe.json`
 - TypeScript: `tsconfig.json`
 - Dart: `pubspec.yaml`
+- Rust: `Cargo.toml`
+- Python: `requirements.txt`, `pyproject.toml`, or `setup.py`
 
 ## LSP Servers
 

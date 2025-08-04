@@ -58,6 +58,8 @@ export class ServerManager {
                 return existsSync(join(serverDir, 'dart-language-server'));
             case 'rust':
                 return existsSync(join(serverDir, 'rust-analyzer'));
+            case 'python':
+                return existsSync(join(serverDir, 'pylsp'));
             default:
                 return false;
         }
@@ -177,6 +179,21 @@ exec rust-analyzer "$@"
                     }
                 };
 
+            case 'python':
+                return {
+                    downloadUrl: '',
+                    command: ['pylsp'],
+                    installScript: async (targetDir: string) => {
+                        // pylsp is expected to be installed system-wide
+                        // Create a simple wrapper script for consistency
+                        const wrapperScript = `#!/bin/sh
+exec pylsp "$@"
+`;
+                        const wrapperPath = join(targetDir, 'pylsp');
+                        await execAsync(`echo '${wrapperScript}' > ${wrapperPath} && chmod +x ${wrapperPath}`);
+                    }
+                };
+
             default:
                 throw new Error(`Unsupported language: ${language}`);
         }
@@ -264,6 +281,9 @@ exec rust-analyzer "$@"
 
             case 'rust':
                 return [join(serverDir, 'rust-analyzer')];
+
+            case 'python':
+                return [join(serverDir, 'pylsp')];
 
             default:
                 throw new Error(`Unsupported language: ${language}`);

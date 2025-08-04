@@ -72,6 +72,24 @@ export async function checkToolchain(language: SupportedLanguage): Promise<Toolc
                     };
                 }
 
+            case 'python':
+                try {
+                    await execAsync('python3 --version');
+                    await execAsync('pip3 --version');
+                    return { installed: true, message: 'Python toolchain found (python3 + pip3)' };
+                } catch {
+                    try {
+                        await execAsync('python --version');
+                        await execAsync('pip --version');
+                        return { installed: true, message: 'Python toolchain found (python + pip)' };
+                    } catch {
+                        return {
+                            installed: false,
+                            message: 'Python toolchain not found. Install Python 3.7+ with pip.'
+                        };
+                    }
+                }
+
             default:
                 return { installed: false, message: `Unknown language: ${language}` };
         }
@@ -84,7 +102,8 @@ export async function checkToolchain(language: SupportedLanguage): Promise<Toolc
             haxe: 'Install Haxe:\n  Download from https://haxe.org or use your package manager',
             typescript: 'Install Node.js:\n  Download from https://nodejs.org',
             dart: 'Install Dart SDK:\n  Download from https://dart.dev/get-dart',
-            rust: 'Install Rust:\n  Download from https://rustup.rs/ (includes rustc + cargo)'
+            rust: 'Install Rust:\n  Download from https://rustup.rs/ (includes rustc + cargo)',
+            python: 'Install Python:\n  Download from https://python.org or use your package manager'
         };
 
         return {
@@ -106,7 +125,8 @@ export async function checkProjectFiles(
         haxe: ['build.hxml', 'haxe.json'],
         typescript: ['tsconfig.json', 'jsconfig.json'],
         dart: ['pubspec.yaml', 'analysis_options.yaml'],
-        rust: ['Cargo.toml']
+        rust: ['Cargo.toml'],
+        python: ['requirements.txt', 'pyproject.toml', 'setup.py', 'setup.cfg', 'Pipfile', 'environment.yml']
     };
 
     const required = projectFiles[language];
@@ -134,7 +154,8 @@ export async function checkProjectFiles(
         haxe: 'No Haxe project files found. Create a build.hxml file.',
         typescript: 'No TypeScript config found. Create tsconfig.json using: npx tsc --init',
         dart: 'No Dart project files found. Create a pubspec.yaml file or use: dart create .',
-        rust: 'No Rust project files found. Create a Cargo.toml file or use: cargo init'
+        rust: 'No Rust project files found. Create a Cargo.toml file or use: cargo init',
+        python: 'No Python project files found. Create a requirements.txt or pyproject.toml file.'
     };
 
     return {
