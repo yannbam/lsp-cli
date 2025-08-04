@@ -205,6 +205,218 @@ The Rust implementation **confirmed**:
 
 **Python implementation should be straightforward following these established patterns.**
 
+## Test Fixtures Implementation Experience
+
+### 11. Comprehensive Test Coverage Strategy
+
+**What Was Created:**
+- **7 Rust source files** with 99 extractable symbols
+- **1,377 lines of test code** covering edge cases
+- **109.6 KB JSON output** demonstrating scale
+- **Multiple modules** testing hierarchical symbol extraction
+
+**Test Structure That Worked:**
+```
+test/fixtures/rust/
+├── Cargo.toml              // Project config with real dependency (serde)
+├── .gitignore              // Critical: exclude target/ and Cargo.lock
+└── src/
+    ├── main.rs             // Basic constructs + documentation edge cases
+    ├── traits.rs           // Trait system comprehensive testing
+    ├── advanced.rs         // Complex generics, lifetimes, higher-kinded types
+    ├── edge_cases.rs       // Parsing edge cases, boundary conditions
+    └── nested/             // Module hierarchy, visibility, cross-references
+        ├── mod.rs
+        ├── submodule.rs
+        └── utils.rs
+```
+
+### 12. Documentation Edge Case Discoveries
+
+**Critical Documentation Testing Results:**
+
+✅ **Works Well:**
+- Standard `///` above functions - perfect extraction
+- Block comments `/** */` - properly captured
+- Multi-line documentation with gaps - handled correctly
+- Unicode characters and special symbols - no issues
+- Very long documentation (>500 chars) - no truncation problems
+
+❌ **Compilation Issues Found:**
+- Inner doc comments `/*!` on functions cause `error[E0753]` - must use `/**`
+- Documentation inside function bodies causes warnings but doesn't break LSP
+- External `extern "C"` blocks don't support documentation (Rust limitation)
+
+**Python Implication**: Python docstrings are more forgiving than Rust doc comments. Expect fewer compilation issues but test various docstring formats: `"""triple quotes"""`, `'''single quotes'''`, and positioning (above/below/inline).
+
+### 13. Bash/Git Pain Points and Solutions
+
+#### **Working Directory Hell**
+
+**Problem**: Claude Code security restrictions prevented certain directory operations:
+```bash
+# ❌ This failed:
+cd /tmp/test-rust-project && cargo init
+
+# Error: cd to '/tmp/test-rust-project' was blocked
+```
+
+**Solution**: Use project-relative paths and absolute paths for commands:
+```bash
+# ✅ This worked:
+mkdir -p test-rust-project && cd test-rust-project && cargo init
+npx tsx /home/jan/src/lsp-cli/src/index.ts /home/jan/src/lsp-cli/test/fixtures/rust rust output.json
+```
+
+#### **Git Path Resolution Issues**
+
+**Problem**: Git operations failed when not in repository root:
+```bash
+# ❌ From subdirectory:
+git add dev_docs/rust_implementation_insights.md
+# fatal: pathspec 'dev_docs/rust_implementation_insights.md' did not match any files
+
+# ❌ Wrong working directory:
+git status  # Shows confusing relative paths
+```
+
+**Solution**: Always `cd` to repository root for git operations:
+```bash
+# ✅ This pattern worked:
+cd /home/jan/src/lsp-cli && git add dev_docs/rust_implementation_insights.md && git commit
+```
+
+#### **Build Artifacts Committed Accidentally**
+
+**Problem**: Cargo build created 83 files in `target/` directory that got committed:
+```bash
+git commit  # Accidentally included target/ and Cargo.lock
+# Result: 303 lines of build artifacts in git history
+```
+
+**Solution**: Create `.gitignore` FIRST, then clean up:
+```gitignore
+/target/
+Cargo.lock
+```
+
+**Python Recommendation**: Create `.gitignore` for Python artifacts immediately:
+```gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+```
+
+### 14. Rust-Specific Compilation Edge Cases
+
+**Type Inference Issues:**
+```rust
+// ❌ This failed compilation:
+let complex = ComplexGeneric::new(42, "test");
+// error[E0283]: type annotations needed
+
+// ✅ This worked:
+let complex: ComplexGeneric<i32, String, &str> = ComplexGeneric::new(42, "test");
+```
+
+**Documentation Comment Issues:**
+```rust
+// ❌ Inner doc comment on function:
+/*! Inner comment */ 
+pub fn function() {}  // error[E0753]: expected outer doc comment
+
+// ✅ Outer doc comment:
+/** Outer comment */
+pub fn function() {}  // Works perfectly
+```
+
+**Python Equivalent Considerations:**
+- Python is more forgiving with type hints (optional)
+- Docstring positioning is flexible
+- Import resolution is more dynamic
+- No compilation step means runtime discovery of issues
+
+### 15. LSP Server Behavior Insights
+
+**rust-analyzer Performance:**
+- **Startup**: ~2 seconds even for complex project
+- **Symbol Extraction**: 99 symbols from 7 files in <1 second
+- **Memory Usage**: Reasonable, no memory leaks observed
+- **Shutdown**: Clean, no hanging processes
+
+**Symbol Categorization:**
+- **Structs**: Properly hierarchical with fields as children
+- **Impl blocks**: Grouped correctly with methods as children  
+- **Traits**: Well-represented with associated types/constants
+- **Modules**: Nested structure preserved
+- **Generics**: Complex type parameters handled correctly
+
+**Python LSP Expectations:**
+- Pylsp may be slower than rust-analyzer (Python vs Rust performance)
+- Python's dynamic nature may result in different symbol categorization
+- Import-based relationships might be more complex than Rust's explicit module system
+
+### 16. Development Workflow Lessons
+
+**What Worked:**
+1. **Incremental Development**: Build fixtures file by file, test each one
+2. **Compilation First**: Ensure all code compiles before LSP testing
+3. **Comprehensive Coverage**: Test every language feature, not just basics
+4. **Real Dependencies**: Include actual dependencies (serde) for realistic testing
+5. **Progressive Complexity**: Start simple, add edge cases systematically
+
+**What Didn't Work:**
+1. **Batch Changes**: Making many changes then debugging compilation issues
+2. **Ignoring Warnings**: Some warnings indicated real issues to fix
+3. **Assuming LSP Behavior**: Test actual symbol extraction, don't assume
+4. **Manual Path Management**: Use absolute paths consistently
+
+**Python Development Recommendations:**
+1. **Virtual Environment**: Test LSP server installation in clean venv
+2. **Import Testing**: Create cross-module imports to test resolution
+3. **Type Hint Coverage**: Include modern Python type hints for better LSP analysis
+4. **Package Structure**: Test both single-file and package-based projects
+
+### 17. Scale and Performance Validation
+
+**Final Test Results:**
+- **Files Analyzed**: 7 Rust source files
+- **Symbols Extracted**: 99 total symbols
+- **JSON Output Size**: 109.6 KB structured data
+- **Processing Time**: <5 seconds end-to-end
+- **Memory Usage**: Stable, no leaks
+
+**This establishes a baseline for Python testing:** A successful Python implementation should achieve similar performance characteristics with comparable complexity.
+
+### 18. Critical Success Factors for Python
+
+Based on Rust implementation experience:
+
+1. **Toolchain Validation**: Robust python3/pip detection with fallbacks
+2. **Virtual Environment Isolation**: Essential for clean LSP server installation
+3. **Project File Flexibility**: Support multiple Python project patterns
+4. **Comprehensive Testing**: Create fixtures covering all Python language features
+5. **Build Artifact Management**: Proper .gitignore from the start
+6. **Path Management**: Use absolute paths consistently in tool commands
+7. **Error Handling**: Clear error messages for installation/configuration issues
+
 ---
 
-*This document provides insights from successful Rust implementation to guide Python support development.*
+*This document captures real implementation experience from Rust support to inform Python development. Updated with test fixture implementation insights and practical development challenges.*
