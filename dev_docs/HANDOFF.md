@@ -150,12 +150,14 @@ All standard LSP symbol kinds supported:
 
 **Python support exceeds all existing languages in comprehensiveness.**
 
-### **⚠️ IMPORTANT NOTES**
+### **🚨 CRITICAL ISSUE - NOT YET RESOLVED**
 
-#### **main.py Import Limitation**
-The main.py file contains complex relative imports (`from .models.user import User`) which cause pylsp parsing issues. This is **authentic LSP server behavior**, not a bug. The file processes successfully (✓ checkmark shown) but symbols aren't extracted due to import resolution failures.
+#### **main.py Symbol Extraction Failure**
+The main.py file is processed by pylsp (✓ checkmark shown) but **zero symbols are extracted**. This is a **configuration or setup issue that needs fixing**, not an acceptable limitation.
 
-**This is a feature, not a bug** - it demonstrates authentic LSP server limitations.
+**Root cause**: pylsp fails to resolve relative imports (`from .models.user import User`) despite the imports working correctly in Python.
+
+**THIS MUST BE FIXED BEFORE UPSTREAM PR** - see `dev_docs/REMAINING_ISSUES.md` for detailed investigation plan.
 
 #### **Pylsp Warnings**
 You may see warnings like:
@@ -166,16 +168,18 @@ These are **pylsp struggling with complex Python features** (asyncio, generics, 
 
 ### **🎯 FINAL ASSESSMENT**
 
-Python support is **production-ready for upstream contribution**:
+Python support is **90% complete but NOT YET upstream-ready**:
 
-- **Enterprise-grade code quality**
-- **Comprehensive feature coverage** 
-- **Real LSP server integration**
-- **Thorough testing and verification**
-- **No shortcuts or self-affirming tests**
-- **Exceeds quality of existing language support**
+✅ **Enterprise-grade code quality**  
+✅ **Real LSP server integration verified**  
+✅ **No shortcuts or self-affirming tests**  
+✅ **Comprehensive feature coverage (when working)**  
+❌ **1 critical file fails symbol extraction** (main.py: 0/~15 expected symbols)  
+❌ **Unresolved pylsp configuration issue**  
 
-**Ready for upstream PR without any reservations.**
+**DO NOT SUBMIT UPSTREAM PR until main.py symbol extraction is fixed.**
+
+**See `dev_docs/REMAINING_ISSUES.md` for detailed investigation plan.**
 
 ---
 
