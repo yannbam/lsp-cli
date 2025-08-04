@@ -21,7 +21,7 @@ program
     .version('1.0.0')
     .option('--llm', 'Print llms.md documentation to stdout')
     .argument('[directory]', 'Directory to analyze')
-    .argument('[language]', 'Language (java, cpp, c, csharp, haxe, typescript)')
+    .argument('[language]', 'Language (java, cpp, c, csharp, haxe, typescript, dart, rust)')
     .argument('[output-file]', 'Output file')
     .option('-v, --verbose', 'Enable verbose logging')
     .action(
@@ -79,7 +79,8 @@ program
                     'csharp',
                     'haxe',
                     'typescript',
-                    'dart'
+                    'dart',
+                    'rust'
                 ];
                 if (!supportedLanguages.includes(language as SupportedLanguage)) {
                     logger.error(

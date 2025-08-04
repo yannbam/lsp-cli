@@ -56,6 +56,8 @@ export class ServerManager {
                 return existsSync(join(serverDir, 'node_modules', '.bin', 'typescript-language-server'));
             case 'dart':
                 return existsSync(join(serverDir, 'dart-language-server'));
+            case 'rust':
+                return existsSync(join(serverDir, 'rust-analyzer'));
             default:
                 return false;
         }
@@ -160,6 +162,21 @@ exec dart language-server "$@"
                     }
                 };
 
+            case 'rust':
+                return {
+                    downloadUrl: '',
+                    command: ['rust-analyzer'],
+                    installScript: async (targetDir: string) => {
+                        // rust-analyzer is expected to be installed system-wide
+                        // Create a simple wrapper script for consistency
+                        const wrapperScript = `#!/bin/sh
+exec rust-analyzer "$@"
+`;
+                        const wrapperPath = join(targetDir, 'rust-analyzer');
+                        await execAsync(`echo '${wrapperScript}' > ${wrapperPath} && chmod +x ${wrapperPath}`);
+                    }
+                };
+
             default:
                 throw new Error(`Unsupported language: ${language}`);
         }
@@ -244,6 +261,9 @@ exec dart language-server "$@"
 
             case 'dart':
                 return [join(serverDir, 'dart-language-server')];
+
+            case 'rust':
+                return [join(serverDir, 'rust-analyzer')];
 
             default:
                 throw new Error(`Unsupported language: ${language}`);
