@@ -140,6 +140,27 @@ Python support is **production-ready and exceeds quality standards**:
 - `test/fixtures.test.ts` - Added comprehensive Python test suite
 - `test/fixtures/python/src/services/data_service.py` - Restored original complex version
 
+### **📝 CHANGES MADE IN TEST CLEANUP SESSION (2025-01-XX)**
+
+#### **Test Failures Resolved**
+- **Fixed C/C++ compile_commands.json**: Updated hardcoded macOS paths to Linux paths
+- **Fixed JQ examples regex**: Updated test regex to match actual jq output format
+- **Removed debug spam**: Eliminated verbose "Extracting documentation for symbol at line X" messages
+- **Fixed linting issues**: Addressed unused variable warnings in test utilities
+
+#### **Test Status After Cleanup**
+- **Python tests**: All passing (3/3 tests, 574 symbols extracted consistently)
+- **C/C++ tests**: Now working (compile_commands.json paths fixed for Linux)
+- **Other tests**: JQ examples now pass, general test suite cleaner
+- **Dart tests**: Still failing (Dart SDK not installed - out of scope for Python/Rust branch)
+
+#### **Files Modified**
+- `src/language-client.ts` - Removed debug logging from extractDocumentation method
+- `test/fixtures/c/compile_commands.json` - Fixed hardcoded macOS paths to Linux
+- `test/fixtures/cpp/compile_commands.json` - Fixed hardcoded macOS paths to Linux  
+- `test/jq-examples.test.ts` - Fixed regex to match actual jq output format
+- `test/utils.ts` - Fixed unused variable warning
+
 ---
 
 *Python support implementation completed and verified*  
