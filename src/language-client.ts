@@ -13,7 +13,6 @@ import {
     InitializeRequest,
     type Location,
     type Position as LSPPosition,
-    type Range as LSPRange,
     type MessageConnection,
     ShutdownRequest,
     StreamMessageReader,
@@ -39,7 +38,6 @@ export class LanguageClient {
 
     constructor(
         private language: SupportedLanguage,
-        private serverPath: string,
         private workspaceRoot: string,
         private logger: Logger
     ) {
@@ -380,14 +378,6 @@ export class LanguageClient {
                 symbolInfo.children = childSymbols;
             }
         }
-    }
-
-    private getPreviewLines(lines: string[], range: LSPRange): string[] {
-        const startLine = range.start.line;
-        const previewStart = Math.max(0, startLine - 2);
-        const previewEnd = Math.min(lines.length, startLine + 3);
-
-        return lines.slice(previewStart, previewEnd);
     }
 
     private async getDefinition(

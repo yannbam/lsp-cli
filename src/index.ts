@@ -115,7 +115,7 @@ program
                 logger.serverStatus(lang, 'ready', serverPath);
 
                 // Start LSP client and analyze
-                const client = new LanguageClient(lang, serverPath, dir, logger);
+                const client = new LanguageClient(lang, dir, logger);
                 logger.section(`Analyzing ${dir}`);
 
                 await client.start();
