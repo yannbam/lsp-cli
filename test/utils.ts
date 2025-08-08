@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 import type { SymbolInfo } from '../src/types';
 
 export interface ExtractedSymbols {
@@ -10,6 +11,16 @@ export interface ExtractedSymbols {
 }
 
 export function runLSPCLI(directory: string, language: string, outputFile: string): void {
+    // Clear parso cache before Python tests to prevent cache poisoning
+    if (language === 'python') {
+        const parsoCachePath = join(homedir(), '.cache', 'parso');
+        try {
+            execSync(`rm -rf "${parsoCachePath}"`, { stdio: 'pipe' });
+        } catch (error) {
+            // Cache directory might not exist, which is fine
+        }
+    }
+    
     const cliPath = join(process.cwd(), 'src', 'index.ts');
     execSync(`npx tsx "${cliPath}" "${directory}" ${language} "${outputFile}"`, {
         stdio: 'inherit',

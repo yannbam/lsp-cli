@@ -11,8 +11,8 @@ This module demonstrates basic Python constructs that lsp-cli should extract:
 
 import sys
 from typing import Optional, List
-from .models.user import User
-from .services.data_service import DataService
+from src.models.user import User
+from src.services.data_service import DataService
 
 # Module-level constants
 DEFAULT_PORT = 8080
