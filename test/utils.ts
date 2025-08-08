@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { homedir } from 'node:os';
+import { join } from 'node:path';
 import type { SymbolInfo } from '../src/types';
 
 export interface ExtractedSymbols {
@@ -20,7 +20,7 @@ export function runLSPCLI(directory: string, language: string, outputFile: strin
             // Cache directory might not exist, which is fine
         }
     }
-    
+
     const cliPath = join(process.cwd(), 'src', 'index.ts');
     execSync(`npx tsx "${cliPath}" "${directory}" ${language} "${outputFile}"`, {
         stdio: 'inherit',

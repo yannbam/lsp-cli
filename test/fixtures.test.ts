@@ -670,22 +670,23 @@ describe('Fixture-based LSP Tests', () => {
 
             // Check for async functions
             const allSymbols = flattenSymbols(result.symbols);
-            const asyncMethods = allSymbols.filter((s) => 
-                s.kind === 'method' && s.name.includes('async') || 
-                s.preview && Array.isArray(s.preview) && s.preview.some((line: string) => line.includes('async def'))
+            const asyncMethods = allSymbols.filter(
+                (s) =>
+                    (s.kind === 'method' && s.name.includes('async')) ||
+                    (s.preview &&
+                        Array.isArray(s.preview) &&
+                        s.preview.some((line: string) => line.includes('async def')))
             );
             expect(asyncMethods.length).toBeGreaterThan(0);
 
             // Check for dataclass
-            const dataclasses = allSymbols.filter((s) => 
-                s.kind === 'class' && (s.name === 'DataModel' || s.name === 'ConnectionConfig')
+            const dataclasses = allSymbols.filter(
+                (s) => s.kind === 'class' && (s.name === 'DataModel' || s.name === 'ConnectionConfig')
             );
             expect(dataclasses.length).toBeGreaterThan(0);
 
             // Check for decorators usage (retry_decorator function should exist)
-            const decoratorFunctions = allSymbols.filter((s) => 
-                s.kind === 'function' && s.name.includes('decorator')
-            );
+            const decoratorFunctions = allSymbols.filter((s) => s.kind === 'function' && s.name.includes('decorator'));
             expect(decoratorFunctions.length).toBeGreaterThan(0);
         });
 
@@ -694,14 +695,14 @@ describe('Fixture-based LSP Tests', () => {
             for (let i = 0; i < 3; i++) {
                 runLSPCLI(pythonFixture, 'python', `${outputFile}-run-${i}`);
                 const result = readOutput(`${outputFile}-run-${i}`);
-                
+
                 // Each run should extract the same number of symbols (no cache poisoning)
                 expect(result.symbols.length).toBeGreaterThan(500);
-                
+
                 // main.py symbols should always be present
                 const mainSymbols = result.symbols.filter((s) => s.file.includes('main.py'));
                 expect(mainSymbols.length).toBeGreaterThan(10);
-                
+
                 // Cleanup
                 if (existsSync(`${outputFile}-run-${i}`)) {
                     execSync(`rm -f ${outputFile}-run-${i}`);
