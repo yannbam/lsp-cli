@@ -16,7 +16,7 @@ export function runLSPCLI(directory: string, language: string, outputFile: strin
         const parsoCachePath = join(homedir(), '.cache', 'parso');
         try {
             execSync(`rm -rf "${parsoCachePath}"`, { stdio: 'pipe' });
-        } catch (error) {
+        } catch (_error) {
             // Cache directory might not exist, which is fine
         }
     }

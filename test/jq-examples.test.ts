@@ -237,7 +237,7 @@ describe('JQ Examples from llms.md', () => {
 
             // Should find methods with more than 10 lines
             if (result) {
-                expect(result).toMatch(/\w+: \d+ lines/);
+                expect(result).toMatch(/".*\(\): \d+ lines"/);
             }
         });
     });

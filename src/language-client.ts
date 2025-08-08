@@ -464,7 +464,6 @@ export class LanguageClient {
         if (symbolStartLine <= 0) return undefined;
 
         let currentLine = symbolStartLine - 1;
-        this.logger.debug(`Extracting documentation for symbol at line ${symbolStartLine}`);
 
         // Scan upwards, skipping empty lines and annotations
         while (currentLine >= 0) {

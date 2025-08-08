@@ -1,16 +1,16 @@
 [
     {
-        "directory": "/Users/badlogic/workspaces/lsp-cli/test/fixtures/cpp",
+        "directory": "/home/jan/src/lsp-cli/test/fixtures/cpp",
         "command": "c++ -std=c++17 -I./include -c src/graphics/renderer.cpp -o build/renderer.o",
         "file": "src/graphics/renderer.cpp"
     },
     {
-        "directory": "/Users/badlogic/workspaces/lsp-cli/test/fixtures/cpp",
+        "directory": "/home/jan/src/lsp-cli/test/fixtures/cpp",
         "command": "c++ -std=c++17 -I./include -c src/math/vector.cpp -o build/vector.o",
         "file": "src/math/vector.cpp"
     },
     {
-        "directory": "/Users/badlogic/workspaces/lsp-cli/test/fixtures/cpp",
+        "directory": "/home/jan/src/lsp-cli/test/fixtures/cpp",
         "command": "c++ -std=c++17 -I./include -c src/main.cpp -o build/main.o",
         "file": "src/main.cpp"
     }
