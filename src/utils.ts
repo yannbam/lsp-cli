@@ -1,5 +1,5 @@
 import { exec } from 'node:child_process';
-import { createWriteStream, existsSync, readdirSync, statSync } from 'node:fs';
+import { createWriteStream, existsSync, readdirSync, type Stats, statSync } from 'node:fs';
 import { get } from 'node:https';
 import { extname, join } from 'node:path';
 import { promisify } from 'node:util';
@@ -173,7 +173,14 @@ export function getAllFiles(directory: string, extensions: string[]): string[] {
 
         for (const entry of entries) {
             const fullPath = join(dir, entry);
-            const stat = statSync(fullPath);
+
+            let stat: Stats;
+            try {
+                stat = statSync(fullPath);
+            } catch (_error) {
+                // Skip files that can't be stat'd (e.g., unresolved symlinks)
+                continue;
+            }
 
             if (stat.isDirectory()) {
                 // Skip common directories
