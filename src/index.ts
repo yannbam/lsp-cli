@@ -21,7 +21,7 @@ program
     .version('1.0.0')
     .option('--llm', 'Print llms.md documentation to stdout')
     .argument('[directory]', 'Directory to analyze')
-    .argument('[language]', 'Language (java, cpp, c, csharp, haxe, typescript)')
+    .argument('[language]', 'Language (java, cpp, c, csharp, haxe, typescript, dart, rust, python)')
     .argument('[output-file]', 'Output file')
     .option('-v, --verbose', 'Enable verbose logging')
     .action(
@@ -79,7 +79,9 @@ program
                     'csharp',
                     'haxe',
                     'typescript',
-                    'dart'
+                    'dart',
+                    'rust',
+                    'python'
                 ];
                 if (!supportedLanguages.includes(language as SupportedLanguage)) {
                     logger.error(
@@ -113,7 +115,7 @@ program
                 logger.serverStatus(lang, 'ready', serverPath);
 
                 // Start LSP client and analyze
-                const client = new LanguageClient(lang, serverPath, dir, logger);
+                const client = new LanguageClient(lang, dir, logger);
                 logger.section(`Analyzing ${dir}`);
 
                 await client.start();

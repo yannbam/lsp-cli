@@ -56,6 +56,10 @@ export class ServerManager {
                 return existsSync(join(serverDir, 'node_modules', '.bin', 'typescript-language-server'));
             case 'dart':
                 return existsSync(join(serverDir, 'dart-language-server'));
+            case 'rust':
+                return existsSync(join(serverDir, 'rust-analyzer'));
+            case 'python':
+                return existsSync(join(serverDir, 'pylsp'));
             default:
                 return false;
         }
@@ -160,6 +164,36 @@ exec dart language-server "$@"
                     }
                 };
 
+            case 'rust':
+                return {
+                    downloadUrl: '',
+                    command: ['rust-analyzer'],
+                    installScript: async (targetDir: string) => {
+                        // rust-analyzer is expected to be installed system-wide
+                        // Create a simple wrapper script for consistency
+                        const wrapperScript = `#!/bin/sh
+exec rust-analyzer "$@"
+`;
+                        const wrapperPath = join(targetDir, 'rust-analyzer');
+                        await execAsync(`echo '${wrapperScript}' > ${wrapperPath} && chmod +x ${wrapperPath}`);
+                    }
+                };
+
+            case 'python':
+                return {
+                    downloadUrl: '',
+                    command: ['pylsp'],
+                    installScript: async (targetDir: string) => {
+                        // pylsp is expected to be installed system-wide
+                        // Create a simple wrapper script for consistency
+                        const wrapperScript = `#!/bin/sh
+exec pylsp "$@"
+`;
+                        const wrapperPath = join(targetDir, 'pylsp');
+                        await execAsync(`echo '${wrapperScript}' > ${wrapperPath} && chmod +x ${wrapperPath}`);
+                    }
+                };
+
             default:
                 throw new Error(`Unsupported language: ${language}`);
         }
@@ -244,6 +278,12 @@ exec dart language-server "$@"
 
             case 'dart':
                 return [join(serverDir, 'dart-language-server')];
+
+            case 'rust':
+                return [join(serverDir, 'rust-analyzer')];
+
+            case 'python':
+                return [join(serverDir, 'pylsp')];
 
             default:
                 throw new Error(`Unsupported language: ${language}`);

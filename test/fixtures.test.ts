@@ -613,6 +613,103 @@ describe('Fixture-based LSP Tests', () => {
             }
         });
     });
+
+    describe('Python', () => {
+        const pythonFixture = join(FIXTURES_DIR, 'python');
+        const outputFile = 'test-python-fixture.json';
+
+        afterEach(() => {
+            if (existsSync(outputFile)) {
+                execSync(`rm -f ${outputFile}`);
+            }
+        });
+
+        it('should extract all Python symbol types', () => {
+            runLSPCLI(pythonFixture, 'python', outputFile);
+            const result = readOutput(outputFile);
+
+            expect(result.language).toBe('python');
+            expect(result.symbols.length).toBeGreaterThan(500); // Expect comprehensive fixture coverage
+
+            // Check for modules
+            const modules = result.symbols.filter((s) => s.kind === 'module');
+            expect(modules.some((m) => m.name === 'sys')).toBe(true);
+            expect(modules.some((m) => m.name === 'asyncio')).toBe(true);
+
+            // Check for classes
+            const classes = result.symbols.filter((s) => s.kind === 'class');
+            expect(classes.some((c) => c.name === 'User')).toBe(true);
+            expect(classes.some((c) => c.name === 'DataService')).toBe(true);
+            expect(classes.some((c) => c.name === 'DatabaseError')).toBe(true);
+
+            // Check for functions
+            const functions = result.symbols.filter((s) => s.kind === 'function');
+            expect(functions.some((f) => f.name === 'main')).toBe(true);
+            expect(functions.some((f) => f.name === 'initialize_application')).toBe(true);
+            expect(functions.some((f) => f.name === 'process_user_data')).toBe(true);
+
+            // Check for variables
+            const variables = result.symbols.filter((s) => s.kind === 'variable');
+            expect(variables.some((v) => v.name === 'DEFAULT_PORT')).toBe(true);
+            expect(variables.some((v) => v.name === 'DEBUG_MODE')).toBe(true);
+
+            // Verify main.py symbols are extracted (this was the critical fix)
+            const mainSymbols = result.symbols.filter((s) => s.file.includes('main.py'));
+            expect(mainSymbols.length).toBeGreaterThan(10); // Should have ~17 symbols
+
+            // Check main.py specific symbols
+            const mainFunctions = mainSymbols.filter((s) => s.kind === 'function');
+            expect(mainFunctions.some((f) => f.name === 'main')).toBe(true);
+            expect(mainFunctions.some((f) => f.name === 'initialize_application')).toBe(true);
+            expect(mainFunctions.some((f) => f.name === 'process_user_data')).toBe(true);
+        });
+
+        it('should handle advanced Python features', () => {
+            runLSPCLI(pythonFixture, 'python', outputFile);
+            const result = readOutput(outputFile);
+
+            // Check for async functions
+            const allSymbols = flattenSymbols(result.symbols);
+            const asyncMethods = allSymbols.filter(
+                (s) =>
+                    (s.kind === 'method' && s.name.includes('async')) ||
+                    (s.preview &&
+                        Array.isArray(s.preview) &&
+                        s.preview.some((line: string) => line.includes('async def')))
+            );
+            expect(asyncMethods.length).toBeGreaterThan(0);
+
+            // Check for dataclass
+            const dataclasses = allSymbols.filter(
+                (s) => s.kind === 'class' && (s.name === 'DataModel' || s.name === 'ConnectionConfig')
+            );
+            expect(dataclasses.length).toBeGreaterThan(0);
+
+            // Check for decorators usage (retry_decorator function should exist)
+            const decoratorFunctions = allSymbols.filter((s) => s.kind === 'function' && s.name.includes('decorator'));
+            expect(decoratorFunctions.length).toBeGreaterThan(0);
+        });
+
+        it('should extract comprehensive symbols without cache poisoning', () => {
+            // Run test multiple times to ensure cache clearing works
+            for (let i = 0; i < 3; i++) {
+                runLSPCLI(pythonFixture, 'python', `${outputFile}-run-${i}`);
+                const result = readOutput(`${outputFile}-run-${i}`);
+
+                // Each run should extract the same number of symbols (no cache poisoning)
+                expect(result.symbols.length).toBeGreaterThan(500);
+
+                // main.py symbols should always be present
+                const mainSymbols = result.symbols.filter((s) => s.file.includes('main.py'));
+                expect(mainSymbols.length).toBeGreaterThan(10);
+
+                // Cleanup
+                if (existsSync(`${outputFile}-run-${i}`)) {
+                    execSync(`rm -f ${outputFile}-run-${i}`);
+                }
+            }
+        });
+    });
 });
 
 // Helper functions

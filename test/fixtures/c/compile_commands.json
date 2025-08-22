@@ -1,16 +1,16 @@
 [
     {
-        "directory": "/Users/badlogic/workspaces/lsp-cli/test/fixtures/c",
+        "directory": "/home/jan/src/lsp-cli/test/fixtures/c",
         "command": "gcc -std=c11 -I. -c src/main.c -o build/main.o",
         "file": "src/main.c"
     },
     {
-        "directory": "/Users/badlogic/workspaces/lsp-cli/test/fixtures/c",
+        "directory": "/home/jan/src/lsp-cli/test/fixtures/c",
         "command": "gcc -std=c11 -I. -c src/string_utils.c -o build/string_utils.o",
         "file": "src/string_utils.c"
     },
     {
-        "directory": "/Users/badlogic/workspaces/lsp-cli/test/fixtures/c",
+        "directory": "/home/jan/src/lsp-cli/test/fixtures/c",
         "command": "gcc -std=c11 -I. -c src/data_structures.c -o build/data_structures.o",
         "file": "src/data_structures.c"
     }

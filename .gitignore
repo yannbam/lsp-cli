@@ -4,3 +4,7 @@ dist
 *.log
 test-*.json
 **/.test-repos/**
+
+# LSP server cache directories
+**/.cache/
+.cache/

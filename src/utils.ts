@@ -1,5 +1,5 @@
 import { exec } from 'node:child_process';
-import { createWriteStream, existsSync, readdirSync, statSync } from 'node:fs';
+import { createWriteStream, existsSync, readdirSync, type Stats, statSync } from 'node:fs';
 import { get } from 'node:https';
 import { extname, join } from 'node:path';
 import { promisify } from 'node:util';
@@ -59,6 +59,37 @@ export async function checkToolchain(language: SupportedLanguage): Promise<Toolc
                 await execAsync('dart --version');
                 return { installed: true, message: 'Dart SDK found' };
 
+            case 'rust':
+                try {
+                    await execAsync('rustc --version');
+                    await execAsync('cargo --version');
+                    return { installed: true, message: 'Rust toolchain found (rustc + cargo)' };
+                } catch {
+                    return {
+                        installed: false,
+                        message:
+                            'Rust toolchain incomplete. Both rustc and cargo are required.\nInstall from https://rustup.rs/'
+                    };
+                }
+
+            case 'python':
+                try {
+                    await execAsync('python3 --version');
+                    await execAsync('pip3 --version');
+                    return { installed: true, message: 'Python toolchain found (python3 + pip3)' };
+                } catch {
+                    try {
+                        await execAsync('python --version');
+                        await execAsync('pip --version');
+                        return { installed: true, message: 'Python toolchain found (python + pip)' };
+                    } catch {
+                        return {
+                            installed: false,
+                            message: 'Python toolchain not found. Install Python 3.7+ with pip.'
+                        };
+                    }
+                }
+
             default:
                 return { installed: false, message: `Unknown language: ${language}` };
         }
@@ -70,7 +101,9 @@ export async function checkToolchain(language: SupportedLanguage): Promise<Toolc
             csharp: 'Install .NET SDK:\n  Download from https://dotnet.microsoft.com',
             haxe: 'Install Haxe:\n  Download from https://haxe.org or use your package manager',
             typescript: 'Install Node.js:\n  Download from https://nodejs.org',
-            dart: 'Install Dart SDK:\n  Download from https://dart.dev/get-dart'
+            dart: 'Install Dart SDK:\n  Download from https://dart.dev/get-dart',
+            rust: 'Install Rust:\n  Download from https://rustup.rs/ (includes rustc + cargo)',
+            python: 'Install Python:\n  Download from https://python.org or use your package manager'
         };
 
         return {
@@ -91,7 +124,9 @@ export async function checkProjectFiles(
         csharp: ['.csproj', '.sln'],
         haxe: ['build.hxml', 'haxe.json'],
         typescript: ['tsconfig.json', 'jsconfig.json'],
-        dart: ['pubspec.yaml', 'analysis_options.yaml']
+        dart: ['pubspec.yaml', 'analysis_options.yaml'],
+        rust: ['Cargo.toml'],
+        python: ['requirements.txt', 'pyproject.toml', 'setup.py', 'setup.cfg', 'Pipfile', 'environment.yml']
     };
 
     const required = projectFiles[language];
@@ -118,7 +153,9 @@ export async function checkProjectFiles(
         csharp: 'No C# project files found. Create a .csproj file or use: dotnet new console',
         haxe: 'No Haxe project files found. Create a build.hxml file.',
         typescript: 'No TypeScript config found. Create tsconfig.json using: npx tsc --init',
-        dart: 'No Dart project files found. Create a pubspec.yaml file or use: dart create .'
+        dart: 'No Dart project files found. Create a pubspec.yaml file or use: dart create .',
+        rust: 'No Rust project files found. Create a Cargo.toml file or use: cargo init',
+        python: 'No Python project files found. Create a requirements.txt or pyproject.toml file.'
     };
 
     return {
@@ -136,7 +173,14 @@ export function getAllFiles(directory: string, extensions: string[]): string[] {
 
         for (const entry of entries) {
             const fullPath = join(dir, entry);
-            const stat = statSync(fullPath);
+
+            let stat: Stats;
+            try {
+                stat = statSync(fullPath);
+            } catch (_error) {
+                // Skip files that can't be stat'd (e.g., unresolved symlinks)
+                continue;
+            }
 
             if (stat.isDirectory()) {
                 // Skip common directories
