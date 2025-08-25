@@ -453,6 +453,12 @@ export class LanguageClient {
     private extractDocumentation(lines: string[], symbolStartLine: number): string | undefined {
         if (symbolStartLine <= 0) return undefined;
 
+        // For Python, check for docstring after the function definition first
+        if (this.language === 'python') {
+            const docstring = this.extractPythonDocstringAfterSymbol(lines, symbolStartLine);
+            if (docstring) return docstring;
+        }
+
         let currentLine = symbolStartLine - 1;
 
         // Scan upwards, skipping empty lines and annotations
@@ -473,6 +479,12 @@ export class LanguageClient {
 
             // Skip attributes for C# ([Obsolete], [Serializable], etc)
             if (this.language === 'csharp' && line.startsWith('[') && line.endsWith(']')) {
+                currentLine--;
+                continue;
+            }
+
+            // Skip attributes for Rust (#[derive], #[cfg], etc)
+            if (this.language === 'rust' && line.startsWith('#[') && line.endsWith(']')) {
                 currentLine--;
                 continue;
             }
@@ -511,9 +523,9 @@ export class LanguageClient {
                 }
             }
 
-            // C/C++ style documentation (/// or //!)
+            // C/C++/Rust style documentation (/// or //!)
             if (
-                (this.language === 'cpp' || this.language === 'c') &&
+                (this.language === 'cpp' || this.language === 'c' || this.language === 'rust') &&
                 (line.startsWith('///') || line.startsWith('//!'))
             ) {
                 const slashDocLines: string[] = [];
@@ -530,6 +542,41 @@ export class LanguageClient {
                 }
 
                 return this.cleanSlashDocumentation(slashDocLines);
+            }
+
+            // Python docstrings (""" or ''')
+            if (this.language === 'python' && (line.startsWith('"""') || line.startsWith("'''"))) {
+                const quote = line.startsWith('"""') ? '"""' : "'''";
+
+                // Handle single-line docstring
+                if (line.endsWith(quote) && line.length > quote.length * 2) {
+                    return this.cleanPythonDocstring([lines[currentLine]]);
+                }
+
+                // Handle multi-line docstring
+                const docLines: string[] = [];
+                let checkLine = currentLine;
+                let foundEnd = false;
+
+                while (checkLine >= 0) {
+                    const checkLineContent = lines[checkLine].trim();
+                    docLines.unshift(lines[checkLine]);
+
+                    // Check if this line contains the closing quotes
+                    if (checkLineContent.endsWith(quote) && checkLine < currentLine) {
+                        foundEnd = true;
+                        break;
+                    }
+
+                    checkLine--;
+
+                    // Don't go too far back
+                    if (currentLine - checkLine > 20) break;
+                }
+
+                if (foundEnd || docLines.length === 1) {
+                    return this.cleanPythonDocstring(docLines);
+                }
             }
 
             // If we hit anything else (not empty line, not annotation, not doc comment), stop
@@ -812,6 +859,117 @@ export class LanguageClient {
             .filter((line) => line.length > 0)
             .join('\n')
             .trim();
+    }
+
+    /**
+     * Cleans Python docstring documentation by removing triple quotes and normalizing formatting.
+     * Handles both """ and ''' style docstrings.
+     */
+    private cleanPythonDocstring(docLines: string[]): string {
+        const cleaned = docLines.map((line, index) => {
+            let trimmed = line.trim();
+
+            // Remove opening triple quotes from first line
+            if (index === 0) {
+                if (trimmed.startsWith('"""')) {
+                    trimmed = trimmed.substring(3).trim();
+                } else if (trimmed.startsWith("'''")) {
+                    trimmed = trimmed.substring(3).trim();
+                }
+            }
+
+            // Remove closing triple quotes from last line
+            if (index === docLines.length - 1) {
+                if (trimmed.endsWith('"""')) {
+                    trimmed = trimmed.substring(0, trimmed.length - 3).trim();
+                } else if (trimmed.endsWith("'''")) {
+                    trimmed = trimmed.substring(0, trimmed.length - 3).trim();
+                }
+            }
+
+            return trimmed;
+        });
+
+        return cleaned
+            .filter((line) => line.length > 0)
+            .join('\n')
+            .trim();
+    }
+
+    /**
+     * Extracts Python docstrings that come after the symbol definition.
+     * Python docstrings appear as the first statement in the function body.
+     */
+    private extractPythonDocstringAfterSymbol(lines: string[], symbolStartLine: number): string | undefined {
+        // Start scanning from the line after the symbol definition
+        let currentLine = symbolStartLine; // symbolStartLine is 0-based, but we want to check starting from the def line
+
+        // Skip lines until we find the first non-empty, non-comment line after the function definition
+        // This should be either the docstring or the first code statement
+        while (currentLine < lines.length) {
+            const line = lines[currentLine].trim();
+
+            // Skip the function definition line itself (contains 'def' or 'class')
+            if (currentLine === symbolStartLine) {
+                currentLine++;
+                continue;
+            }
+
+            // Skip empty lines and regular comments (not docstrings)
+            if (line === '' || (line.startsWith('#') && !line.startsWith('#"""') && !line.startsWith("#'''"))) {
+                currentLine++;
+                continue;
+            }
+
+            // Check if this line starts a docstring
+            if (line.startsWith('"""') || line.startsWith("'''")) {
+                return this.extractPythonDocstringFromLine(lines, currentLine);
+            }
+
+            // If we hit any other code, there's no docstring
+            break;
+        }
+
+        return undefined;
+    }
+
+    /**
+     * Extracts a Python docstring starting from a specific line.
+     */
+    private extractPythonDocstringFromLine(lines: string[], startLine: number): string | undefined {
+        const line = lines[startLine].trim();
+        const quote = line.startsWith('"""') ? '"""' : "'''";
+
+        // Handle single-line docstring
+        if (line.endsWith(quote) && line.length > quote.length * 2) {
+            return this.cleanPythonDocstring([lines[startLine]]);
+        }
+
+        // Handle multi-line docstring
+        const docLines: string[] = [];
+        let currentLine = startLine;
+        let foundEnd = false;
+
+        while (currentLine < lines.length) {
+            docLines.push(lines[currentLine]);
+
+            // Check if this line contains the closing quotes (but not the opening line)
+            if (currentLine > startLine && lines[currentLine].trim().endsWith(quote)) {
+                foundEnd = true;
+                break;
+            }
+
+            currentLine++;
+
+            // Don't go too far forward
+            if (currentLine - startLine > 20) break;
+        }
+
+        if (foundEnd || docLines.length === 1) {
+            return this.cleanPythonDocstring(docLines);
+        }
+
+        return undefined;
     }
 
     private mergeAnonymousStructsWithTypedefs(symbols: SymbolInfo[]): SymbolInfo[] {
