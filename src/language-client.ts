@@ -477,6 +477,12 @@ export class LanguageClient {
                 continue;
             }
 
+            // Skip attributes for Rust (#[derive], #[cfg], etc)
+            if (this.language === 'rust' && line.startsWith('#[') && line.endsWith(']')) {
+                currentLine--;
+                continue;
+            }
+
             // Check for documentation comments
 
             // C# XML documentation (///)
@@ -511,9 +517,9 @@ export class LanguageClient {
                 }
             }
 
-            // C/C++ style documentation (/// or //!)
+            // C/C++/Rust style documentation (/// or //!)
             if (
-                (this.language === 'cpp' || this.language === 'c') &&
+                (this.language === 'cpp' || this.language === 'c' || this.language === 'rust') &&
                 (line.startsWith('///') || line.startsWith('//!'))
             ) {
                 const slashDocLines: string[] = [];

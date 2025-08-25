@@ -121,6 +121,65 @@ describe('Comment Extraction Tests', () => {
             expect(comments.some((c) => c.includes('Test string'))).toBe(true);
         }
     });
+
+    /**
+     * Test Rust documentation extraction
+     * This test verifies that Rust doc comments (/// and //!) are properly extracted
+     * as documentation, not just inline comments.
+     */
+    it('should extract documentation from Rust doc comments', () => {
+        const outputFile = 'test-rust-documentation.json';
+        const fixturesPath = join(__dirname, 'fixtures', 'rust');
+
+        runLSPCLI(fixturesPath, 'rust', outputFile);
+
+        expect(existsSync(outputFile)).toBe(true);
+
+        const result = JSON.parse(readFileSync(outputFile, 'utf-8'));
+        const symbols = result.symbols as SymbolInfo[];
+
+        // Test struct documentation - should have /// doc comments
+        const standardPerson = findSymbolByName(symbols, 'StandardPerson');
+        expect(standardPerson).toBeDefined();
+        expect(standardPerson!.documentation).toBeDefined();
+        expect(standardPerson!.documentation).toContain('A basic struct with standard documentation above');
+
+        // Test function documentation - should have /// doc comments
+        const documentedFunction = findSymbolByName(symbols, 'documented_above_function');
+        expect(documentedFunction).toBeDefined();
+        expect(documentedFunction!.documentation).toBeDefined();
+        expect(documentedFunction!.documentation).toContain('Function with documentation above');
+        expect(documentedFunction!.documentation).toContain('Tests standard function documentation');
+
+        // Test enum documentation - should have /// doc comments
+        const status = findSymbolByName(symbols, 'Status');
+        expect(status).toBeDefined();
+        expect(status!.documentation).toBeDefined();
+        expect(status!.documentation).toContain('Enum with comprehensive documentation');
+
+        // Test method documentation within impl blocks
+        const newMethod = findChildByName(
+            findSymbolByName(symbols, 'impl StandardPerson') || findSymbolByName(symbols, 'StandardPerson')!,
+            'new'
+        );
+        expect(newMethod).toBeDefined();
+        expect(newMethod!.documentation).toBeDefined();
+        expect(newMethod!.documentation).toContain('Creates a new StandardPerson');
+        expect(newMethod!.documentation).toContain('Arguments');
+        expect(newMethod!.documentation).toContain('Returns');
+
+        // Test multi-line documentation
+        const multiLineFunc = findSymbolByName(symbols, 'multi_line_docs');
+        expect(multiLineFunc).toBeDefined();
+        expect(multiLineFunc!.documentation).toBeDefined();
+        expect(multiLineFunc!.documentation).toContain('Multiple');
+        expect(multiLineFunc!.documentation).toContain('line');
+        expect(multiLineFunc!.documentation).toContain('documentation');
+
+        // Verify we have meaningful documentation extraction overall
+        const docsCount = countSymbolsWithDocumentation(symbols);
+        expect(docsCount).toBeGreaterThan(10); // Should have many documented symbols
+    });
 });
 
 /**
@@ -145,4 +204,18 @@ function findSymbolByName(symbols: SymbolInfo[], name: string): SymbolInfo | und
 function findChildByName(parent: SymbolInfo, name: string): SymbolInfo | undefined {
     if (!parent.children) return undefined;
     return parent.children.find((child) => child.name === name);
+}
+
+/**
+ * Helper function to count symbols with documentation
+ */
+function countSymbolsWithDocumentation(symbols: SymbolInfo[]): number {
+    let count = 0;
+    for (const symbol of symbols) {
+        if (symbol.documentation) count++;
+        if (symbol.children) {
+            count += countSymbolsWithDocumentation(symbol.children);
+        }
+    }
+    return count;
 }
