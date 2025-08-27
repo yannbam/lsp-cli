@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#!/bin/bash
+
+# Check if required arguments are provided
+if [ -z "$1" ] || [ -z "$2" ]; then
+  echo "Usage: $0 language sourcefile"
+  exit 1
+fi
+
+# Validate file path
+FILEPATH=$(readlink -f "$2" 2>/dev/null)
+if [ $? -ne 0 ] || [ ! -f "$FILEPATH" ]; then
+  echo "Error: Invalid or inaccessible file path: $2"
+  exit 1
+fi
+
+export FILEPATH
+
+lsp-cli-jq "$1" '.symbols[] | select(.file == env.FILEPATH) | "\(.name) (\(.kind)):\n    \(.range.start.line + 1)-\(.range.end.line + 1): \"\(.preview // .name)\"" + (if .documentation then "\n      doc: " + (.documentation | gsub("\n"; " | ")) else "" end) + (if .comments then "\n      # " + (.comments | join(" | ")) else "" end) + (if .kind == "class" then "\n" + ([(.children[]? | select(.kind == "constructor") | "    \(.range.start.line + 1)-\(.range.end.line + 1): \"\(.preview // "constructor()")\""), (.children[]? | select(.kind == "method") | "    \(.range.start.line + 1)-\(.range.end.line + 1): \"\(.preview)\"" + (if .documentation then "\n      doc: " + (.documentation | gsub("\n"; " | ")) else "" end) + (if .comments then "\n      # " + (.comments | join(" | ")) else "" end))] | sort_by(split(":")[0] | ltrimstr("    ") | split("-")[0] | tonumber) | join("\n")) else "" end)' | jq -r | sed 's/\\n/\n/g'
+
+
+# lsp-cli-jq language '.symbols[] | select(.file == "/ABSOLUTE/PATH/TO/FILENAME") | "\(.name) (\(.kind)):\n    \(.range.start.line + 1)-\(.range.end.line + 1): \"\(.preview // .name)\"" + (if .documentation then "\n      doc: " + (.documentation | gsub("\n"; " | ")) else "" end) + (if .comments then "\n      # " + (.comments | join(" | ")) else "" end) + (if .kind == "class" then "\n" + ([(.children[]? | select(.kind == "constructor") | "    \(.range.start.line + 1)-\(.range.end.line + 1): \"\(.preview // "constructor()")\""), (.children[]? | select(.kind == "method") | "    \(.range.start.line + 1)-\(.range.end.line + 1): \"\(.preview)\"" + (if .documentation then "\n      doc: " + (.documentation | gsub("\n"; " | ")) else "" end) + (if .comments then "\n      # " + (.comments | join(" | ")) else "" end))] | sort_by(split(":")[0] | ltrimstr("    ") | split("-")[0] | tonumber) | join("\n")) else "" end)' | jq -r | sed 's/\\n/\n/g'
