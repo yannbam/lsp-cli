@@ -8,3 +8,6 @@ test-*.json
 # LSP server cache directories
 **/.cache/
 .cache/
+
+.claude-trace/
+tmp/
