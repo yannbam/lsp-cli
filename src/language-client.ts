@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import {
     createMessageConnection,
     type DefinitionParams,
@@ -45,7 +45,21 @@ export class LanguageClient {
     }
 
     async start(): Promise<void> {
+        // Ensure LSP server is installed before attempting to start
+        await this.serverManager.ensureServer(this.language);
+
+        // Validate server installation
+        const validation = this.serverManager.validateServer(this.language);
+        if (!validation.valid) {
+            throw new Error(`${validation.error}\n` +
+                          `Language: ${this.language}\n` +
+                          `Suggestion: Try reinstalling the ${this.language} LSP server or check your system PATH`);
+        }
+
         const command = this.serverManager.getServerCommand(this.language);
+
+        this.logger.debug(`Starting LSP server: ${command.join(' ')}`);
+        this.logger.debug(`Working directory: ${this.workspaceRoot}`);
 
         // Start the LSP server process
         this.serverProcess = spawn(command[0], command.slice(1), {
@@ -60,41 +74,103 @@ export class LanguageClient {
         });
 
         this.serverProcess.on('error', (err) => {
-            this.logger.error('Failed to spawn process', err.message);
+            const errorMsg = `Failed to spawn LSP server process:\n` +
+                           `  Language: ${this.language}\n` +
+                           `  Command: ${command.join(' ')}\n` +
+                           `  Working Directory: ${this.workspaceRoot}\n` +
+                           `  Error: ${err.message}\n`;
+            if (err.message.includes('ENOENT')) {
+                this.logger.error(errorMsg +
+                    `  Suggestion: The ${this.language} LSP server executable was not found.\n` +
+                    `  Please ensure the server is installed and accessible in your PATH.`);
+            } else {
+                this.logger.error(errorMsg);
+            }
+        });
+
+        // Capture stderr for diagnostic information
+        let stderrOutput = '';
+        this.serverProcess.stderr?.on('data', (data) => {
+            const message = data.toString();
+            stderrOutput += message;
+            this.logger.debug(`[LSP stderr]: ${message.trim()}`);
         });
 
         this.serverProcess.on('exit', (code, signal) => {
             if (code !== 0 && code !== null && code !== 143) {
-                this.logger.error(`LSP server exited unexpectedly`, `code ${code}, signal ${signal}`);
+                let errorMsg = `LSP server exited unexpectedly:\n` +
+                             `  Language: ${this.language}\n` +
+                             `  Command: ${command.join(' ')}\n` +
+                             `  Exit code: ${code}\n` +
+                             `  Signal: ${signal}\n`;
+
+                if (stderrOutput.trim()) {
+                    errorMsg += `  Server error output:\n${stderrOutput.split('\n').map(line => `    ${line}`).join('\n')}\n`;
+                }
+
+                // Add language-specific troubleshooting hints
+                if (this.language === 'python' && stderrOutput.includes('ModuleNotFoundError')) {
+                    errorMsg += `  Suggestion: Install python-lsp-server: pip install python-lsp-server\n`;
+                } else if (this.language === 'java' && (code === 1 || stderrOutput.includes('java'))) {
+                    errorMsg += `  Suggestion: Ensure Java 11+ is installed and JAVA_HOME is set correctly\n`;
+                } else if ((this.language === 'c' || this.language === 'cpp') && code === 127) {
+                    errorMsg += `  Suggestion: Install clangd: sudo apt install clangd (Linux) or brew install llvm (macOS)\n`;
+                }
+
+                this.logger.error(errorMsg);
             }
         });
 
         if (!this.serverProcess.stdout || !this.serverProcess.stdin) {
-            throw new Error('Failed to start LSP server');
+            throw new Error(`Failed to start LSP server: stdout or stdin not available\n` +
+                          `Language: ${this.language}\n` +
+                          `Command: ${command.join(' ')}`);
         }
-
-        // Always capture stderr to see errors
-        this.serverProcess.stderr?.on('data', (data) => {
-            const message = data.toString().trim();
-            if (message) {
-                this.logger.debug(`[LSP stderr]: ${message}`);
-            }
-        });
 
         // Create message connection
         const reader = new StreamMessageReader(this.serverProcess.stdout);
         const writer = new StreamMessageWriter(this.serverProcess.stdin);
         this.connection = createMessageConnection(reader, writer);
 
-        // Handle connection errors
+        // Handle connection errors with detailed context
         this.connection.onError((error) => {
-            this.logger.error('LSP connection error', String(error));
+            const errorMsg = `LSP connection error:\n` +
+                           `  Language: ${this.language}\n` +
+                           `  Command: ${command.join(' ')}\n` +
+                           `  Error: ${String(error)}\n` +
+                           `  Working Directory: ${this.workspaceRoot}`;
+            this.logger.error(errorMsg);
         });
 
+        // Track initialization state for better close diagnostics
+        let connectionEstablished = false;
+
         this.connection.onClose(() => {
-            this.logger.info('LSP connection closed');
-            process.exit(0);
+            let closeMsg = `LSP connection closed:\n` +
+                         `  Language: ${this.language}\n` +
+                         `  Command: ${command.join(' ')}\n`;
+
+            if (!connectionEstablished) {
+                closeMsg += `  Status: Connection failed during startup\n` +
+                           `  Suggestion: Check if the ${this.language} LSP server is properly installed\n`;
+                if (stderrOutput.trim()) {
+                    closeMsg += `  Server stderr:\n${stderrOutput.split('\n').map(line => `    ${line}`).join('\n')}\n`;
+                }
+                this.logger.error(closeMsg);
+                process.exit(1);
+            } else if (!this.initialized) {
+                closeMsg += `  Status: Connection closed during initialization\n`;
+                this.logger.error(closeMsg);
+                process.exit(1);
+            } else {
+                closeMsg += `  Status: Normal shutdown after analysis completion`;
+                this.logger.info(closeMsg);
+                process.exit(0);
+            }
         });
+
+        // Mark connection as established
+        connectionEstablished = true;
 
         // Start listening
         this.connection.listen();

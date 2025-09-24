@@ -1,0 +1,54 @@
+{
+  "uuid": "9bbbfd55-ca01-4345-a550-a0df78681899",
+  "name": "Improve LSP Error Messages",
+  "details": "Enhance error reporting for LSP connection failures to provide more helpful diagnostic information when servers fail to start or connect.",
+  "tasks": [
+    {
+      "name": "Analyze Current Error Handling",
+      "details": "Review how LSP connection errors are currently handled in language-client.ts",
+      "status": "completed",
+      "priority": "medium",
+      "uuid": "8bc656fa-8080-47f7-b7ad-f162756d630d",
+      "created_at": "2025-09-24T08:33:43.204Z",
+      "updated_at": "2025-09-24T08:33:43.204Z"
+    },
+    {
+      "name": "Add Server Validation",
+      "details": "Before attempting LSP connection, validate that the server executable exists and is accessible",
+      "status": "completed",
+      "priority": "high",
+      "uuid": "803d0421-4567-4d4f-8846-cb0b8387f909",
+      "created_at": "2025-09-24T08:33:43.204Z",
+      "updated_at": "2025-09-24T08:35:20.337Z"
+    },
+    {
+      "name": "Improve Connection Error Messages",
+      "details": "Replace generic 'LSP connection closed' with specific error context about what failed and why",
+      "status": "completed",
+      "priority": "high",
+      "uuid": "12bde718-15aa-4f6c-9551-675801dd374e",
+      "created_at": "2025-09-24T08:33:43.204Z",
+      "updated_at": "2025-09-24T08:35:20.337Z"
+    },
+    {
+      "name": "Add Diagnostic Information",
+      "details": "When LSP fails, provide diagnostic info like server command, working directory, stderr output",
+      "status": "completed",
+      "priority": "medium",
+      "uuid": "3f61e4da-9da0-4262-8722-8000b9444505",
+      "created_at": "2025-09-24T08:33:43.204Z",
+      "updated_at": "2025-09-24T08:35:20.337Z"
+    },
+    {
+      "name": "Test Error Scenarios",
+      "details": "Test improved error messages with various failure scenarios (missing server, permission issues, etc)",
+      "status": "completed",
+      "priority": "medium",
+      "uuid": "0a2d9b4c-1356-458a-b3ec-e1a9e10b059f",
+      "created_at": "2025-09-24T08:33:43.204Z",
+      "updated_at": "2025-09-24T08:36:17.017Z"
+    }
+  ],
+  "created_at": "2025-09-24T08:33:43.204Z",
+  "updated_at": "2025-09-24T08:36:17.017Z"
+}

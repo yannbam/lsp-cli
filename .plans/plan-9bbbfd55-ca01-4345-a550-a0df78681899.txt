@@ -1,0 +1,9 @@
+🌳 "Improve LSP Error Messages"
+📝 Enhance error reporting for LSP connection failures to provide more helpful diagnostic information when servers fail to start or connect.
+📊 ██████████ 100% (5/5 tasks)
+
+├── ✅ |Analyze Current Error Handling| "Review how LSP connection errors are currently handled in language-client.ts" (🟡)
+├── ✅ |Add Server Validation| "Before attempting LSP connection, validate that the server executable exists and is accessible" (🔴)
+├── ✅ |Improve Connection Error Messages| "Replace generic 'LSP connection closed' with specific error context about what failed and why" (🔴)
+├── ✅ |Add Diagnostic Information| "When LSP fails, provide diagnostic info like server command, working directory, stderr output" (🟡)
+└── ✅ |Test Error Scenarios| "Test improved error messages with various failure scenarios (missing server, permission issues, etc)" (🟡)

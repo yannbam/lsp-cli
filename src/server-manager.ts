@@ -37,6 +37,30 @@ export class ServerManager {
         return serverDir;
     }
 
+    /**
+     * Validates that LSP server is properly installed and accessible
+     */
+    validateServer(language: SupportedLanguage): { valid: boolean; error?: string } {
+        if (!this.isServerInstalled(language)) {
+            return {
+                valid: false,
+                error: `${language} LSP server is not installed. Run the tool to auto-install it.`
+            };
+        }
+
+        const command = this.getServerCommand(language);
+        const serverExecutable = command[0];
+
+        if (!existsSync(serverExecutable)) {
+            return {
+                valid: false,
+                error: `${language} LSP server executable not found: ${serverExecutable}`
+            };
+        }
+
+        return { valid: true };
+    }
+
     private isServerInstalled(language: SupportedLanguage): boolean {
         const serverDir = join(this.baseDir, language);
 
