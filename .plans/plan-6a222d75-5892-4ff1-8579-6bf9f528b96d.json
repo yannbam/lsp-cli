@@ -1,0 +1,54 @@
+{
+  "uuid": "6a222d75-5892-4ff1-8579-6bf9f528b96d",
+  "name": "Python LSP Investigation",
+  "details": "Investigate and fix Python LSP connectivity issues after Python 3.12 upgrade. All Python tests are failing with \"lsp connection closed\" error.",
+  "tasks": [
+    {
+      "name": "Analyze Python LSP Setup",
+      "details": "Read server-manager.ts to understand how Python LSP server is configured and installed",
+      "status": "completed",
+      "priority": "urgent",
+      "uuid": "13fb48af-2922-4949-b66e-7c13f494f22b",
+      "created_at": "2025-09-24T08:24:50.838Z",
+      "updated_at": "2025-09-24T08:25:08.341Z"
+    },
+    {
+      "name": "Check Python LSP Server State",
+      "details": "Check what Python LSP server is installed and if it's compatible with Python 3.12",
+      "status": "completed",
+      "priority": "urgent",
+      "uuid": "2888f94c-ba2f-42f0-8816-341173fa2f5d",
+      "created_at": "2025-09-24T08:24:50.838Z",
+      "updated_at": "2025-09-24T08:25:20.105Z"
+    },
+    {
+      "name": "Test Manual Python LSP",
+      "details": "Try to run Python LSP analysis manually to isolate the exact failure point",
+      "status": "completed",
+      "priority": "urgent",
+      "uuid": "70c57005-7529-4970-9b40-a1aafeec27b2",
+      "created_at": "2025-09-24T08:24:50.838Z",
+      "updated_at": "2025-09-24T08:25:58.277Z"
+    },
+    {
+      "name": "Fix Python 3.12 Compatibility",
+      "details": "Implement fix for Python 3.12 compatibility issue with LSP server",
+      "status": "completed",
+      "priority": "high",
+      "uuid": "9337fb0e-55a4-4693-b18d-714934b6e137",
+      "created_at": "2025-09-24T08:24:50.838Z",
+      "updated_at": "2025-09-24T08:25:41.289Z"
+    },
+    {
+      "name": "Verify Fix",
+      "details": "Run Python-specific tests to confirm fix works",
+      "status": "completed",
+      "priority": "high",
+      "uuid": "baced109-50e8-4289-be03-6c1e0c272cce",
+      "created_at": "2025-09-24T08:24:50.838Z",
+      "updated_at": "2025-09-24T08:27:05.767Z"
+    }
+  ],
+  "created_at": "2025-09-24T08:24:50.838Z",
+  "updated_at": "2025-09-24T08:27:05.767Z"
+}
