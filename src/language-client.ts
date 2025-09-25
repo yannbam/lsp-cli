@@ -783,12 +783,18 @@ export class LanguageClient {
             // Check if this is a comment-only line or has code + comment
             const lineCommentIndex = line.indexOf('//');
             const blockStartIndex = line.indexOf('/*');
+            const pythonCommentIndex = this.language === 'python' ? line.indexOf('#') : -1;
 
             let hasCode = false;
             let commentContent = '';
 
             // Determine if line has code before comments
-            if (lineCommentIndex !== -1 && !this.isInsideStringLiteral(line, lineCommentIndex)) {
+            if (pythonCommentIndex !== -1 && !this.isInsideStringLiteral(line, pythonCommentIndex)) {
+                // Handle Python # comments
+                const beforeComment = line.substring(0, pythonCommentIndex).trim();
+                hasCode = beforeComment.length > 0;
+                commentContent = line.substring(pythonCommentIndex + 1).trim();
+            } else if (lineCommentIndex !== -1 && !this.isInsideStringLiteral(line, lineCommentIndex)) {
                 // Check if it's a documentation comment
                 const docCheck = line.substring(lineCommentIndex, lineCommentIndex + 3);
                 if (docCheck === '///' || docCheck === '//!') {
