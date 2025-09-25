@@ -224,3 +224,56 @@ This capability tells the LSP server that the client can handle hierarchical `Do
 ---
 
 **TECHNICAL NOTE**: This change resolves a fundamental architectural inconsistency where Python was the only major language returning flat symbol structures while all others returned hierarchical structures. Now all languages consistently provide rich parent-child relationships in their symbol output.
+
+## Follow-up Session: Python Comment Extraction Fix
+
+### ✅ **ADDITIONAL COMPLETION (Post-Migration)**
+4. **Fixed Python inline comments**: After pyright migration, Python inline comments (`#` comments) were missing from extracted symbols
+
+### 🔍 **PROBLEM IDENTIFIED**: Missing Python Comments After Pyright Migration
+
+**THE ISSUE**: Python inline comments (`# comments`) were not being extracted after the pylsp to pyright migration, even though docstrings were working correctly.
+
+**ROOT CAUSE**: The `extractInlineComments` method in `language-client.ts` only handled C-style comments (`//` and `/* */`) but not Python's `#` comments.
+
+**WHY THIS HAPPENED**:
+- pylsp used `SymbolInformation[]` format (flat structure) - different code path
+- pyright uses `DocumentSymbol[]` format (hierarchical structure) - calls `extractInlineComments`
+- `extractInlineComments` was only designed for C-style languages
+
+### Fix Applied (`language-client.ts:786-796`)
+
+```typescript
+// Added Python comment detection
+const pythonCommentIndex = this.language === 'python' ? line.indexOf('#') : -1;
+
+// Handle Python # comments first, before C-style comments
+if (pythonCommentIndex !== -1 && !this.isInsideStringLiteral(line, pythonCommentIndex)) {
+    // Handle Python # comments
+    const beforeComment = line.substring(0, pythonCommentIndex).trim();
+    hasCode = beforeComment.length > 0;
+    commentContent = line.substring(pythonCommentIndex + 1).trim();
+} else if (lineCommentIndex !== -1 && !this.isInsideStringLiteral(line, lineCommentIndex)) {
+    // Existing C-style comment handling...
+```
+
+### ✅ **Testing Results: Both Comment Types Working**
+
+**Python Functions:**
+- ✅ **Docstrings**: `"documentation": "Function docstring"`
+- ✅ **Inline comments**: `"comments": ["# This is inline comment", "# Another comment"]`
+
+**TypeScript Functions:**
+- ✅ **Inline comments**: `"comments": ["// TypeScript comment", "// Another comment"]`
+- ✅ **No regression**: Existing functionality preserved
+
+### Current Status: **FULLY COMPLETE**
+
+✅ **Python hierarchical symbols** (DocumentSymbol[] format)
+✅ **Python docstring extraction** (documentation field)
+✅ **Python inline comment extraction** (comments field)
+✅ **TypeScript comment extraction** (no regression)
+✅ **Automatic installation** (pyright via npm)
+✅ **Cross-language consistency** (all languages hierarchical)
+
+**Commit**: `8ac7c34` - Fix Python inline comment extraction after pyright migration
