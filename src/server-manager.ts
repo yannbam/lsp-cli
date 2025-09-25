@@ -83,7 +83,7 @@ export class ServerManager {
             case 'rust':
                 return existsSync(join(serverDir, 'rust-analyzer'));
             case 'python':
-                return existsSync(join(serverDir, 'pylsp'));
+                return existsSync(join(serverDir, 'node_modules', '.bin', 'pyright-langserver'));
             default:
                 return false;
         }
@@ -206,15 +206,9 @@ exec rust-analyzer "$@"
             case 'python':
                 return {
                     downloadUrl: '',
-                    command: ['pylsp'],
+                    command: ['pyright-langserver'],
                     installScript: async (targetDir: string) => {
-                        // pylsp is expected to be installed system-wide
-                        // Create a simple wrapper script for consistency
-                        const wrapperScript = `#!/bin/sh
-exec pylsp "$@"
-`;
-                        const wrapperPath = join(targetDir, 'pylsp');
-                        await execAsync(`echo '${wrapperScript}' > ${wrapperPath} && chmod +x ${wrapperPath}`);
+                        await execAsync(`npm install --prefix ${targetDir} pyright`);
                     }
                 };
 
@@ -307,7 +301,7 @@ exec pylsp "$@"
                 return [join(serverDir, 'rust-analyzer')];
 
             case 'python':
-                return [join(serverDir, 'pylsp')];
+                return [join(serverDir, 'node_modules', '.bin', 'pyright-langserver'), '--stdio'];
 
             default:
                 throw new Error(`Unsupported language: ${language}`);

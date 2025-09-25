@@ -14,7 +14,7 @@ lsp-cli-jq typescript '.symbols[] | select(.file == "/ABSOLUTE/PATH/TO/FILENAME"
 
 ---
 **RULES**:
-1. BEFORE modifying or adding any code you MUST a FULL understanding of the architecture it is in and be aware of any code in different places that will get affected by your code changes!
+1. BEFORE modifying or adding any code you MUST have a COMPLETE understanding of the architecture it is in and be aware of any code in different places that will get affected by your code changes!
 2. DONT fix out-of-scope issues that are not relevant to YOUR CURRENT TASK!
 3. Follow the e/code protocol and also add a docstring with full argument and return object/value descriptions!
 4. Write elegant solutions with minimal code
