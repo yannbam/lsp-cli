@@ -5,11 +5,12 @@
     "main": "dist/index.js",
     "bin": {
         "lsp-cli": "dist/index.js",
-        "lsp-cli-jq": "dist/lsp-cli-jq"
+        "lsp-cli-jq": "dist/lsp-cli-jq",
+        "lsp-cli-file": "dist/lsp-cli-file"
     },
     "scripts": {
         "start": "tsx src/index.ts",
-        "build": "esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js && cp llms.md dist/ && cp bin/lsp-cli-jq dist/ && chmod +x dist/lsp-cli-jq",
+        "build": "rm -rf dist && esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/index.js --banner:js='#!/usr/bin/env node' && chmod +x dist/index.js && cp llms.md dist/ && cp bin/lsp-cli-jq bin/lsp-cli-file dist/ && chmod +x dist/lsp-cli-jq dist/lsp-cli-file",
         "typecheck": "tsc --noEmit",
         "lint": "biome check --write . --error-on-warnings",
         "format": "biome format --write .",

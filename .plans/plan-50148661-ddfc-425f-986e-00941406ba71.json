@@ -1,0 +1,111 @@
+{
+  "uuid": "50148661-ddfc-425f-986e-00941406ba71",
+  "name": "upstream-pr-analysis",
+  "details": "Comprehensive analysis of local changes vs upstream for preparing PR contributions to badlogic/lsp-cli",
+  "tasks": [
+    {
+      "name": "Identify upstream changes",
+      "details": "Analyze what upstream has added since our fork (version bumps, type improvements, etc.)",
+      "status": "completed",
+      "priority": "high",
+      "sub_tasks": [],
+      "uuid": "878d965f-abdf-427b-8ee5-89046df056bc",
+      "created_at": "2025-10-01T19:43:39.173Z",
+      "updated_at": "2025-10-01T19:43:39.173Z"
+    },
+    {
+      "name": "Categorize local changes",
+      "details": "Organize our changes into logical feature groups for potential separate PRs",
+      "status": "completed",
+      "priority": "urgent",
+      "sub_tasks": [
+        {
+          "name": "Comment extraction feature",
+          "details": "Inline comment extraction feature that adds 'comments' field to SymbolInfo.\n\n**Files involved:**\n- src/language-client.ts: extractInlineComments(), shouldExtractComments() methods\n- src/types.ts: Added comments?: string[] field\n- test/comment-extraction.test.ts: Comprehensive tests\n- Test fixtures with CommentTestService files for all languages\n\n**Value proposition:**\n- Enables e/code transparency pattern\n- Extracts inline comments from function bodies\n- Supports C-style (//, /* */) and Python (#) comments\n- Non-breaking addition (optional field)\n\n**Status:** Ready for PR #4 (after foundational changes)",
+          "status": "completed",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "fd6e62b5-54c7-4f29-bea7-73bb4698ab9e",
+          "created_at": "2025-10-01T19:43:39.174Z",
+          "updated_at": "2025-10-01T19:47:50.688Z"
+        },
+        {
+          "name": "Python support",
+          "details": "Complete Python language support with pyright LSP server.\n\n**Files involved:**\n- src/server-manager.ts: Python server config with npm-based pyright installation\n- src/language-client.ts: Python # comment handling\n- src/index.ts: Added 'python' to supported languages\n- src/types.ts: Added 'python' to SupportedLanguage type\n- test/fixtures/python/*: Comprehensive test fixtures\n- README.md: Python documentation\n\n**Key features:**\n- Hierarchical DocumentSymbol[] format (not flat SymbolInformation[])\n- Automatic pyright installation via npm\n- Local installation (no global dependencies)\n- Python docstring extraction\n- Python inline comment extraction\n\n**Status:** Ready for PR #2 (depends on PR #1 type system updates)",
+          "status": "completed",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "776e05a9-1751-4949-8f05-f78fd0c60099",
+          "created_at": "2025-10-01T19:43:39.174Z",
+          "updated_at": "2025-10-01T19:47:50.688Z"
+        },
+        {
+          "name": "Rust support",
+          "details": "Complete Rust language support with rust-analyzer LSP server.\n\n**Files involved:**\n- src/server-manager.ts: Rust server config with rustup-based rust-analyzer installation\n- src/index.ts: Added 'rust' to supported languages\n- src/types.ts: Added 'rust' to SupportedLanguage type\n- test/fixtures/rust/*: Comprehensive test fixtures with Cargo.toml\n- README.md: Rust documentation\n\n**Key features:**\n- Hierarchical DocumentSymbol[] format\n- Automatic rust-analyzer installation via rustup\n- Rust doc comment (/// and //!) extraction\n- Support for traits, implementations, modules\n\n**Status:** Ready for PR #3 (depends on PR #1 type system updates)",
+          "status": "completed",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "f397243a-d40a-4821-85e0-005b2bcc93ba",
+          "created_at": "2025-10-01T19:43:39.174Z",
+          "updated_at": "2025-10-01T19:47:50.688Z"
+        },
+        {
+          "name": "CLI wrapper tools",
+          "details": "Convenience wrapper scripts for simplified LSP analysis.\n\n**Files involved:**\n- bin/lsp-cli-jq: Wrapper that auto-analyzes current directory + runs jq queries\n- bin/lsp-cli-file: Wrapper for analyzing single files with formatted output\n- README.md: Documentation for wrapper usage\n\n**Key features:**\n- lsp-cli-jq: One-command analysis + query of current directory\n- Auto-generates and cleans up temp files\n- Simplified jq query interface\n- Comprehensive help and examples\n\n**Value proposition:**\n- Reduces common workflow from 2 commands to 1\n- Great for interactive exploration\n- Lowers barrier to entry\n\n**Status:** Ready for PR #5 (minimal dependencies on other changes)",
+          "status": "completed",
+          "priority": "medium",
+          "sub_tasks": [],
+          "uuid": "a2808b39-aae6-49d7-a068-230a5bcb12b3",
+          "created_at": "2025-10-01T19:43:39.174Z",
+          "updated_at": "2025-10-01T19:47:50.688Z"
+        },
+        {
+          "name": "Test infrastructure",
+          "details": "Comprehensive test fixtures and test suite.\n\n**Files involved:**\n- test/comment-extraction.test.ts: Tests for comment extraction feature\n- test/fixtures/c/src/comment_test_service.c: C test fixtures\n- test/fixtures/cpp/src/CommentTestService.cpp: C++ test fixtures\n- test/fixtures/csharp/src/CommentTestService.cs: C# test fixtures\n- test/fixtures/haxe/src/test/CommentTestService.hx: Haxe test fixtures\n- test/fixtures/java/src/com/example/test/CommentTestService.java: Java test fixtures\n- test/fixtures/typescript/src/CommentTestService.ts: TypeScript test fixtures\n- test/fixtures/python/*: Extensive Python test suite (11 files)\n- test/fixtures/rust/*: Extensive Rust test suite with cargo project\n\n**Coverage:**\n- Comment extraction for all languages\n- Python advanced features (decorators, async, type hints)\n- Rust traits, implementations, modules\n- Edge cases and boundary conditions\n\n**Status:** Ready to include with respective PRs",
+          "status": "completed",
+          "priority": "medium",
+          "sub_tasks": [],
+          "uuid": "564e4e63-5735-43da-8e67-8e96734809f1",
+          "created_at": "2025-10-01T19:43:39.174Z",
+          "updated_at": "2025-10-01T19:47:50.688Z"
+        }
+      ],
+      "uuid": "f65881a9-0cec-4d62-854b-0950784d88ba",
+      "created_at": "2025-10-01T19:43:39.174Z",
+      "updated_at": "2025-10-01T19:43:39.174Z",
+      "completion_percentage": 100
+    },
+    {
+      "name": "Check for conflicts",
+      "details": "Verify if any of our changes conflict with upstream changes",
+      "status": "completed",
+      "priority": "high",
+      "sub_tasks": [],
+      "uuid": "cef543c6-891f-4a21-8eb3-b25a98c1bf2c",
+      "created_at": "2025-10-01T19:43:39.174Z",
+      "updated_at": "2025-10-01T19:47:15.030Z"
+    },
+    {
+      "name": "Identify non-upstreamable content",
+      "details": "Identified files that should NOT be included in upstream PR:\n\n**Personal/Project-Specific:**\n- `CLAUDE.md` - Personal Claude Code instructions\n- `.plans/*.json` and `.plans/*.txt` - Personal planning files\n- `docs/HANDOFF.md` - Development session notes\n- `tmp` - Temporary file\n\n**Potentially Upstreamable:**\n- `llms.md` - Updated documentation for LLM consumption (needs merge with upstream version)\n\nAll test fixtures, source code changes, and wrapper scripts ARE appropriate for upstream contribution.",
+      "status": "completed",
+      "priority": "high",
+      "sub_tasks": [],
+      "uuid": "ca61f17e-5553-4d6c-be69-eaa8978eb437",
+      "created_at": "2025-10-01T19:43:39.174Z",
+      "updated_at": "2025-10-01T19:47:26.251Z"
+    },
+    {
+      "name": "Create PR strategy",
+      "details": "**RECOMMENDED STRATEGY: 5 Sequential PRs (Stacked)**\n\nThis strategy minimizes review complexity, isolates risk, and maximizes acceptance probability.\n\n---\n\n**PR #1: 🔧 Foundation - Type System Compatibility**\n- **Priority:** CRITICAL (all other PRs depend on this)\n- **Scope:** Resolve type system conflicts with upstream v0.1.3\n- **Changes:**\n  - Accept upstream's Supertype structure (breaking change)\n  - Update all references to supertypes field\n  - Update tests to expect Supertype[] instead of string[]\n  - Merge build system changes\n  - Update package.json to v0.1.3 baseline\n- **Risk:** HIGH (breaking changes)\n- **Value:** Mandatory for compatibility\n- **Files:** src/types.ts, package.json, tests\n- **Test Requirements:** All existing tests pass with new structure\n\n---\n\n**PR #2: 🐍 Python Language Support**\n- **Priority:** HIGH (major feature addition)\n- **Scope:** Add Python as supported language\n- **Changes:**\n  - Python LSP server config (pyright via npm)\n  - Python language detection and initialization\n  - Python comment (#) extraction\n  - Comprehensive test fixtures\n  - Documentation\n- **Dependencies:** PR #1 (type system)\n- **Risk:** LOW (pure addition)\n- **Value:** HIGH (requested feature, popular language)\n- **Files:** src/server-manager.ts, src/language-client.ts, src/index.ts, src/types.ts, test/fixtures/python/*, README.md\n- **Test Requirements:** Python fixtures analysis produces correct hierarchical symbols\n\n---\n\n**PR #3: 🦀 Rust Language Support**\n- **Priority:** HIGH (major feature addition)\n- **Scope:** Add Rust as supported language\n- **Changes:**\n  - Rust LSP server config (rust-analyzer via rustup)\n  - Rust language detection and initialization\n  - Rust doc comment (/// and //!) extraction\n  - Comprehensive test fixtures with Cargo project\n  - Documentation\n- **Dependencies:** PR #1 (type system)\n- **Risk:** LOW (pure addition)\n- **Value:** HIGH (requested feature, growing language)\n- **Files:** src/server-manager.ts, src/index.ts, src/types.ts, test/fixtures/rust/*, README.md\n- **Test Requirements:** Rust fixtures analysis produces correct hierarchical symbols\n\n---\n\n**PR #4: 💬 Inline Comment Extraction**\n- **Priority:** MEDIUM (feature enhancement)\n- **Scope:** Add inline comment extraction for e/code transparency\n- **Changes:**\n  - extractInlineComments() method\n  - shouldExtractComments() filtering logic\n  - comments field in SymbolInfo (optional, non-breaking)\n  - String literal detection to avoid false positives\n  - Comment grouping logic\n  - Comprehensive test suite for all languages\n  - Test fixtures with CommentTestService files\n  - Documentation with examples\n- **Dependencies:** PR #1 (type system)\n- **Risk:** LOW (optional field, non-breaking)\n- **Value:** MEDIUM (enables transparency patterns for LLM consumption)\n- **Files:** src/language-client.ts, src/types.ts, test/comment-extraction.test.ts, test/fixtures/*/CommentTestService.*, llms.md, README.md\n- **Test Requirements:** Comment extraction tests pass for all languages\n\n---\n\n**PR #5: 🛠️ CLI Wrapper Tools**\n- **Priority:** LOW (convenience tooling)\n- **Scope:** Add lsp-cli-jq and lsp-cli-file wrapper scripts\n- **Changes:**\n  - bin/lsp-cli-jq: Auto-analyze + jq query wrapper\n  - bin/lsp-cli-file: Single-file analysis wrapper\n  - Update package.json bin entries\n  - Update build script to copy wrappers to dist\n  - Documentation with examples\n- **Dependencies:** PR #1 (build system)\n- **Risk:** MINIMAL (standalone scripts)\n- **Value:** MEDIUM (developer experience improvement)\n- **Files:** bin/lsp-cli-jq, bin/lsp-cli-file, package.json, README.md\n- **Test Requirements:** Wrappers execute successfully and produce expected output\n\n---\n\n**ALTERNATIVE STRATEGY: 2 Large PRs**\n\nIf maintainer prefers fewer PRs:\n\n**PR #1: Foundation + Language Support**\n- Type system compatibility\n- Python support\n- Rust support\n\n**PR #2: Features + Tooling**\n- Comment extraction\n- CLI wrappers\n\n---\n\n**EXCLUDED FROM UPSTREAM:**\n- CLAUDE.md (personal instructions)\n- .plans/* (personal planning)\n- docs/HANDOFF.md (session notes)\n- tmp/ (temporary files)\n\n---\n\n**MERGE CONFLICT RESOLUTION:**\nSee detailed conflict analysis from previous task. Key conflicts:\n1. src/types.ts - Accept upstream Supertype structure\n2. src/language-client.ts - Merge preview extraction + comment extraction\n3. package.json - Merge bin entries and build script\n4. llms.md - Merge documentation\n\n---\n\n**NEXT STEPS:**\n1. Create feature branches from latest upstream/main\n2. Cherry-pick relevant commits for each PR\n3. Resolve conflicts as outlined\n4. Test each PR thoroughly\n5. Write clear PR descriptions with value propositions\n6. Submit PRs in sequence (wait for PR #1 acceptance before submitting others)",
+      "status": "completed",
+      "priority": "urgent",
+      "sub_tasks": [],
+      "uuid": "7bbd81e9-3f91-4ad1-be7b-d98aab5d3451",
+      "created_at": "2025-10-01T19:43:39.174Z",
+      "updated_at": "2025-10-01T19:48:16.078Z"
+    }
+  ],
+  "created_at": "2025-10-01T19:43:39.174Z",
+  "updated_at": "2025-10-01T19:49:45.101Z"
+}
