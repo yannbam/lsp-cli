@@ -1,0 +1,311 @@
+{
+  "uuid": "7cf765a4-1b98-458b-906f-d32a3cbd93c6",
+  "name": "upstream-pr-creation",
+  "details": "Create and push PR branches to upstream lsp-cli repository. Execute the 5-PR stacked strategy for contributing Python, Rust, comments, and tooling features back to badlogic/lsp-cli.",
+  "tasks": [
+    {
+      "name": "Preparation",
+      "details": "Fetch latest upstream, verify git state, plan branch strategy",
+      "status": "in_progress",
+      "priority": "urgent",
+      "sub_tasks": [
+        {
+          "name": "Fetch upstream",
+          "details": "Ensure we have latest upstream/main changes",
+          "status": "completed",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "a9c1eaaf-1100-4980-aeef-22df7ea78625",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:58:30.282Z"
+        },
+        {
+          "name": "Review current commits",
+          "details": "Analyze which commits belong to which PR",
+          "status": "completed",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "968154ff-2523-4350-8978-5f7d16f410e7",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:58:30.282Z"
+        },
+        {
+          "name": "Plan branch structure",
+          "details": "Define branch naming and dependencies",
+          "status": "pending",
+          "priority": "medium",
+          "sub_tasks": [],
+          "uuid": "70243a34-3d3c-408a-967f-8131b6775cdd",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        }
+      ],
+      "uuid": "9dc30eda-3bc6-41a9-a7e6-521993ddf817",
+      "created_at": "2025-10-01T19:57:57.032Z",
+      "updated_at": "2025-10-01T19:57:57.032Z",
+      "completion_percentage": 67
+    },
+    {
+      "name": "PR1: Foundation",
+      "details": "Type system compatibility - resolve conflicts with upstream v0.1.3",
+      "status": "pending",
+      "priority": "urgent",
+      "sub_tasks": [
+        {
+          "name": "Create pr1-foundation branch",
+          "details": "Branch from upstream/main",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "af47a4de-e330-4a3d-a144-5f6aeb1415a4",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Merge upstream changes",
+          "details": "Accept upstream Supertype structure and resolve conflicts",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "e86c57c9-3674-4ff1-a9ab-95634e2f2a85",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Test PR1",
+          "details": "Verify all tests pass with new type system",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "3818313f-2987-4ef4-9754-c97395718412",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Push PR1",
+          "details": "Push to origin and create GitHub PR",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "7cf60fef-dc38-4dcf-8cda-86a6168f276e",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        }
+      ],
+      "uuid": "0f8c5b82-a93d-4b4d-b11e-16ce15598156",
+      "created_at": "2025-10-01T19:57:57.032Z",
+      "updated_at": "2025-10-01T19:57:57.032Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "PR2: Python Support",
+      "details": "Add Python language support with pyright",
+      "status": "pending",
+      "priority": "high",
+      "sub_tasks": [
+        {
+          "name": "Create pr2-python branch",
+          "details": "Branch from pr1-foundation",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "bf3480c1-c59f-49a9-8382-4efeb0b0adb8",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Cherry-pick Python commits",
+          "details": "Select and apply Python-related commits",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "8409d131-17c0-4167-ad10-a69d4a9e175d",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Test PR2",
+          "details": "Verify Python support works correctly",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "3c137505-98a0-47f3-bd8f-fadd9624e84a",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Push PR2",
+          "details": "Push to origin and create GitHub PR",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "a0f47f2e-6738-4046-aa18-8be71315f219",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        }
+      ],
+      "uuid": "89badf9d-822b-4860-84bd-5a78b3ee12d3",
+      "created_at": "2025-10-01T19:57:57.032Z",
+      "updated_at": "2025-10-01T19:57:57.032Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "PR3: Rust Support",
+      "details": "Add Rust language support with rust-analyzer",
+      "status": "pending",
+      "priority": "high",
+      "sub_tasks": [
+        {
+          "name": "Create pr3-rust branch",
+          "details": "Branch from pr1-foundation",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "66fce8ef-1e34-480a-8a2d-14daf09c6df8",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Cherry-pick Rust commits",
+          "details": "Select and apply Rust-related commits",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "0cfe2cd9-f2f9-4523-b4f3-d7765ae9e546",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Test PR3",
+          "details": "Verify Rust support works correctly",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "17e52d87-61e2-417a-b907-6ea82b5798f9",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Push PR3",
+          "details": "Push to origin and create GitHub PR",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "96b15af3-c6fc-4aeb-ad15-4389faba022b",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        }
+      ],
+      "uuid": "cbddf4be-e1fd-4ad8-8c6b-b30aefbb10ad",
+      "created_at": "2025-10-01T19:57:57.032Z",
+      "updated_at": "2025-10-01T19:57:57.032Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "PR4: Comment Extraction",
+      "details": "Add inline comment extraction for e/code transparency",
+      "status": "pending",
+      "priority": "medium",
+      "sub_tasks": [
+        {
+          "name": "Create pr4-comments branch",
+          "details": "Branch from pr1-foundation",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "4351d027-d604-4b0b-b263-5b47c151cf45",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Cherry-pick comment commits",
+          "details": "Select and apply comment extraction commits",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "c9c4d113-a968-4033-97bd-c8b76c6e3300",
+          "created_at": "2025-10-01T19:57:57.032Z",
+          "updated_at": "2025-10-01T19:57:57.032Z"
+        },
+        {
+          "name": "Test PR4",
+          "details": "Verify comment extraction works for all languages",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "36e07bc1-70c6-4967-9532-085285703f90",
+          "created_at": "2025-10-01T19:57:57.033Z",
+          "updated_at": "2025-10-01T19:57:57.033Z"
+        },
+        {
+          "name": "Push PR4",
+          "details": "Push to origin and create GitHub PR",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "c3a95c5f-81cb-4b49-a901-27a44b2a9c5a",
+          "created_at": "2025-10-01T19:57:57.033Z",
+          "updated_at": "2025-10-01T19:57:57.033Z"
+        }
+      ],
+      "uuid": "10f7d668-7806-428e-8b72-a6ae75f38c3b",
+      "created_at": "2025-10-01T19:57:57.032Z",
+      "updated_at": "2025-10-01T19:57:57.032Z",
+      "completion_percentage": 0
+    },
+    {
+      "name": "PR5: CLI Wrappers",
+      "details": "Add lsp-cli-jq and lsp-cli-file convenience tools",
+      "status": "pending",
+      "priority": "medium",
+      "sub_tasks": [
+        {
+          "name": "Create pr5-wrappers branch",
+          "details": "Branch from pr1-foundation",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "02b5ba2a-aa55-4d55-bcd9-b8fe78c479fd",
+          "created_at": "2025-10-01T19:57:57.033Z",
+          "updated_at": "2025-10-01T19:57:57.033Z"
+        },
+        {
+          "name": "Cherry-pick wrapper commits",
+          "details": "Select and apply wrapper script commits",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "9a172ad7-6d9e-4154-8fed-db6dda2f8b1e",
+          "created_at": "2025-10-01T19:57:57.033Z",
+          "updated_at": "2025-10-01T19:57:57.033Z"
+        },
+        {
+          "name": "Test PR5",
+          "details": "Verify both wrappers work correctly",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "3d63b456-3d3c-42e5-91b8-1d3affcaea53",
+          "created_at": "2025-10-01T19:57:57.033Z",
+          "updated_at": "2025-10-01T19:57:57.033Z"
+        },
+        {
+          "name": "Push PR5",
+          "details": "Push to origin and create GitHub PR",
+          "status": "pending",
+          "priority": "high",
+          "sub_tasks": [],
+          "uuid": "9c0ba016-3ded-4ee1-af97-f619514c16e1",
+          "created_at": "2025-10-01T19:57:57.033Z",
+          "updated_at": "2025-10-01T19:57:57.033Z"
+        }
+      ],
+      "uuid": "77e9974f-846b-4dbd-8071-c8e08f16e8f4",
+      "created_at": "2025-10-01T19:57:57.033Z",
+      "updated_at": "2025-10-01T19:57:57.033Z",
+      "completion_percentage": 0
+    }
+  ],
+  "created_at": "2025-10-01T19:57:57.033Z",
+  "updated_at": "2025-10-01T19:58:30.282Z"
+}
