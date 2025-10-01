@@ -56,6 +56,8 @@ export class ServerManager {
                 return existsSync(join(serverDir, 'node_modules', '.bin', 'typescript-language-server'));
             case 'dart':
                 return existsSync(join(serverDir, 'dart-language-server'));
+            case 'python':
+                return existsSync(join(serverDir, 'node_modules', '.bin', 'pyright-langserver'));
             default:
                 return false;
         }
@@ -160,6 +162,15 @@ exec dart language-server "$@"
                     }
                 };
 
+            case 'python':
+                return {
+                    downloadUrl: '',
+                    command: ['pyright-langserver'],
+                    installScript: async (targetDir: string) => {
+                        await execAsync(`npm install --prefix ${targetDir} pyright`);
+                    }
+                };
+
             default:
                 throw new Error(`Unsupported language: ${language}`);
         }
@@ -244,6 +255,9 @@ exec dart language-server "$@"
 
             case 'dart':
                 return [join(serverDir, 'dart-language-server')];
+
+            case 'python':
+                return [join(serverDir, 'node_modules', '.bin', 'pyright-langserver'), '--stdio'];
 
             default:
                 throw new Error(`Unsupported language: ${language}`);

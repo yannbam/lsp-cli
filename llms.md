@@ -26,7 +26,7 @@ lsp-cli <directory> <language> <output-file>
 
 ### Parameters
 - `<directory>`: Path to the source code directory to analyze
-- `<language>`: Programming language (java, cpp, c, csharp, haxe, typescript, dart)
+- `<language>`: Programming language (java, cpp, c, csharp, haxe, typescript, dart, python)
 - `<output-file>`: Path where the JSON output will be written
 
 ## JSON Output Structure
@@ -177,6 +177,24 @@ lsp-cli <directory> <language> <output-file>
 - The LSP server is included with the SDK (`dart language-server` command)
 - Supports analysis_options.yaml for project-specific linting rules
 
+### Python
+**Top-level symbols:**
+- `class`: Class definitions
+- `function`: Top-level functions
+- `variable`: Top-level variables and constants
+
+**Nested symbols (children):**
+- `method`: Instance and static methods
+- `field`: Instance variables
+- `variable`: Class variables
+- `property`: Properties (using @property decorator)
+
+**Notes:**
+- Python LSP server uses Pyright for advanced type checking and IntelliSense
+- Supports type hints (PEP 484) and stub files (.pyi)
+- Docstrings are extracted from both above the function (standard) and inside the function body (first statement)
+- Supports both `"""` and `'''` style docstrings
+
 ## Supertype Information
 
 The `supertypes` field contains an array of parent classes and interfaces that a type extends or implements. Each entry is an object with a `name` field and optional `typeArguments` field for generic types.
@@ -228,6 +246,11 @@ Example:
 **C#**
 - Base classes and interfaces (after `:` in type declaration)
 - Generic constraints are not included
+
+**Python**
+- Base classes (from class declaration parentheses)
+- Multiple inheritance is supported
+- Generic type hints are preserved
 
 ### Example supertype queries:
 
