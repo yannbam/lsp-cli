@@ -1336,7 +1336,8 @@ export class LanguageClient {
             csharp: 'csharp',
             haxe: 'haxe',
             typescript: 'typescript',
-            dart: 'dart'
+            dart: 'dart',
+            rust: 'rust'
         };
         return languageMap[this.language];
     }
@@ -1349,7 +1350,8 @@ export class LanguageClient {
             csharp: ['.cs'],
             haxe: ['.hx'],
             dart: ['.dart'],
-            typescript: ['.ts', '.tsx']
+            typescript: ['.ts', '.tsx'],
+            rust: ['.rs']
         };
 
         const extensions = extensionMap[this.language];

@@ -26,7 +26,7 @@ lsp-cli <directory> <language> <output-file>
 
 ### Parameters
 - `<directory>`: Path to the source code directory to analyze
-- `<language>`: Programming language (java, cpp, c, csharp, haxe, typescript, dart)
+- `<language>`: Programming language (java, cpp, c, csharp, haxe, typescript, dart, rust)
 - `<output-file>`: Path where the JSON output will be written
 
 ## JSON Output Structure
@@ -177,6 +177,26 @@ lsp-cli <directory> <language> <output-file>
 - The LSP server is included with the SDK (`dart language-server` command)
 - Supports analysis_options.yaml for project-specific linting rules
 
+### Rust
+**Top-level symbols:**
+- `module`: Module definitions
+- `struct`: Struct definitions
+- `enum`: Enum definitions
+- `function`: Top-level functions
+- `constant`: Constants
+
+**Nested symbols (children):**
+- `method`: Methods (associated functions)
+- `field`: Struct fields
+- `enumMember`: Enum variants
+- `function`: Associated functions
+
+**Notes:**
+- Rust LSP server uses rust-analyzer
+- Requires Rust toolchain (rustc, cargo) to be installed
+- Supports Cargo projects with Cargo.toml
+- Documentation comments (///, //!) are extracted
+
 ## Supertype Information
 
 The `supertypes` field contains an array of parent classes and interfaces that a type extends or implements. Each entry is an object with a `name` field and optional `typeArguments` field for generic types.
@@ -228,6 +248,10 @@ Example:
 **C#**
 - Base classes and interfaces (after `:` in type declaration)
 - Generic constraints are not included
+
+**Rust**
+- Trait implementations (from `impl` blocks)
+- Supports generic type parameters in trait implementations
 
 ### Example supertype queries:
 
