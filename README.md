@@ -53,6 +53,68 @@ npx tsx src/index.ts /path/to/java/project java types.json -v
 lsp-cli --llm
 ```
 
+## lsp-cli-jq Wrapper
+
+A convenience wrapper that automatically analyzes the current directory and runs jq queries on the results.
+
+### Usage
+```bash
+lsp-cli-jq <language> <jq_query>
+```
+
+### Examples
+```bash
+# Find all class names in a TypeScript project
+lsp-cli-jq typescript '.symbols[] | select(.kind == "class") | .name'
+
+# Get file locations of all methods in a Java project
+lsp-cli-jq java '.symbols[] | .. | objects | select(.kind == "method") | "\(.file):\(.range.start.line + 1)"'
+
+# Find functions with TODO comments
+lsp-cli-jq typescript '.symbols[] | .. | objects | select(.comments[]? | contains("TODO")) | .name'
+```
+
+The wrapper automatically:
+- Analyzes the current working directory
+- Generates temporary JSON files with cleanup
+- Forwards jq queries to the analysis results
+
+Use `lsp-cli-jq --help` for more information and comprehensive examples.
+
+## lsp-cli-file Wrapper
+
+A convenience wrapper for analyzing single source files with formatted output. Built on top of `lsp-cli-jq`.
+
+### Usage
+```bash
+lsp-cli-file <language> <sourcefile>
+```
+
+### Example
+```bash
+# Analyze a TypeScript file
+lsp-cli-file typescript src/MyClass.ts
+
+# Output format:
+# ClassName (class):
+#     10-50: "export class ClassName {"
+#       doc: Class documentation
+#     15-20: "constructor() {"
+#       doc: Constructor documentation
+#       # Implementation comments
+#     22-25: "public myMethod(): void {"
+#       doc: Method documentation
+#       # Method implementation comments
+```
+
+The wrapper:
+- Uses `lsp-cli-jq` internally to analyze the current directory
+- Filters results to show only the specified file
+- Formats output with line numbers, documentation, and inline comments
+- Shows class structure with methods and constructors
+
+**Note:** Both `lsp-cli-file` and `lsp-cli-jq` are included when you install lsp-cli globally.
+
 ## Output
 
 The tool outputs JSON with all symbols found in the codebase:

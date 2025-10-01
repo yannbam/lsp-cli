@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# lsp-cli-jq - Wrapper script for lsp-cli + jq analysis
+# Automatically analyzes current directory and runs jq queries
+
+set -e
+
+# Show help
+if [[ $# -eq 0 || "$1" == "--help" || "$1" == "-h" ]]; then
+    echo "lsp-cli-jq - Wrapper script for lsp-cli that automatically analyzes the current directory"
+    echo
+    echo "Usage: lsp-cli-jq <language> <jq_query>"
+    echo "       lsp-cli-jq --help"
+    echo
+    echo "Arguments:"
+    echo "  language   Programming language (java, cpp, c, csharp, haxe, typescript, dart)"
+    echo "  jq_query   JQ query to run on the analysis results"
+    echo
+    echo "Options:"
+    echo "  --help, -h Show this help message and full lsp-cli documentation"
+    echo
+    echo "Examples:"
+    echo "  lsp-cli-jq typescript '.symbols[] | select(.kind == \"class\") | .name'"
+    echo "  lsp-cli-jq java '.symbols[] | select(.name == \"MyClass\") | .file'"
+    echo
+    echo "The script generates a temporary JSON file and cleans it up automatically."
+    echo
+    echo "Full lsp-cli documentation:"
+    echo "----------------------------------------"
+    lsp-cli --llm
+    exit 0
+fi
+
+# Check arguments
+if [[ $# -ne 2 ]]; then
+    echo "Error: Expected 2 arguments, got $#" >&2
+    echo "Usage: lsp-cli-jq <language> <jq_query>" >&2
+    echo "Use --help for more information" >&2
+    exit 1
+fi
+
+language="$1"
+jq_query="$2"
+
+# Generate temp filename from current working directory
+cwd_absolute=$(pwd)
+cwd_sanitized=$(echo "$cwd_absolute" | sed 's|^/||' | tr '/' '-')
+temp_file="/tmp/${cwd_sanitized}-lsp-cli.json"
+
+# Cleanup function
+cleanup() {
+    [[ -f "$temp_file" ]] && rm -f "$temp_file"
+}
+trap cleanup EXIT
+
+# Run lsp-cli (suppress stdout, show stderr for errors)
+if ! lsp-cli . "$language" "$temp_file" >/dev/null; then
+    echo "Error: lsp-cli analysis failed" >&2
+    exit 1
+fi
+
+# Run jq query
+jq "$jq_query" "$temp_file"

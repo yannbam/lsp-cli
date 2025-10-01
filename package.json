@@ -5,7 +5,9 @@
     "main": "dist/lib.js",
     "types": "dist/lib.d.ts",
     "bin": {
-        "lsp-cli": "dist/cli.js"
+        "lsp-cli": "dist/cli.js",
+        "lsp-cli-jq": "dist/lsp-cli-jq",
+        "lsp-cli-file": "dist/lsp-cli-file"
     },
     "exports": {
         ".": {
@@ -24,11 +26,13 @@
         "dist/**/*.d.ts",
         "dist/**/*.js.map",
         "dist/**/*.d.ts.map",
-        "dist/llms.md"
+        "dist/llms.md",
+        "dist/lsp-cli-jq",
+        "dist/lsp-cli-file"
     ],
     "scripts": {
         "start": "tsx src/index.ts",
-        "build": "rm -rf dist && mkdir -p dist && tsc && esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/cli.js --sourcemap --banner:js='#!/usr/bin/env node' && chmod +x dist/cli.js && cp llms.md dist/",
+        "build": "rm -rf dist && mkdir -p dist && tsc && esbuild src/index.ts --bundle --platform=node --target=node18 --outfile=dist/cli.js --sourcemap --banner:js='#!/usr/bin/env node' && chmod +x dist/cli.js && cp llms.md dist/ && cp bin/lsp-cli-jq bin/lsp-cli-file dist/ && chmod +x dist/lsp-cli-jq dist/lsp-cli-file",
         "typecheck": "tsc --noEmit",
         "lint": "biome check --write . --error-on-warnings",
         "format": "biome format --write .",
