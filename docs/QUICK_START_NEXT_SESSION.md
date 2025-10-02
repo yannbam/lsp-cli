@@ -1,92 +1,68 @@
 # Quick Start for Next Session
 
-**Previous Session:** 6cf4329b-7cd0-405d-8b71-a36618a14656 (2025-10-02)
+**Previous Session:** 0b224797-9ef3-4787-97e0-980a404f31ce (2025-10-02)
 
 ## What's Done ✅
 
-3 PRs submitted to upstream:
-- **PR #5:** CLI Wrapper Tools - https://github.com/yannbam/lsp-cli/pull/5
-- **PR #6:** Python Language Support - https://github.com/yannbam/lsp-cli/pull/6  
-- **PR #7:** Rust Language Support - https://github.com/yannbam/lsp-cli/pull/7
+**All PRs successfully submitted to upstream (badlogic/lsp-cli):**
+- **PR #2:** Comment Extraction - https://github.com/badlogic/lsp-cli/pull/2 (submitted earlier)
+- **PR #4:** Python Language Support - https://github.com/badlogic/lsp-cli/pull/4
+- **PR #5:** Rust Language Support - https://github.com/badlogic/lsp-cli/pull/5
+- **PR #6:** CLI Wrapper Tools - https://github.com/badlogic/lsp-cli/pull/6
 
 ## What's Next ⏳
 
-**PR #4: Comment Extraction** - Add inline comment extraction feature
+**Monitor PRs for review feedback** - All features have been contributed back to upstream
 
 ## How to Continue
 
-### Option 1: Create PR #4 (Recommended)
+### Option 1: Monitor and Respond to PR Feedback
+
+Check upstream PRs for maintainer feedback:
 
 ```bash
-# 1. Ensure you're on main and it's up to date
-git checkout main
-git pull
+# Check all upstream PRs
+gh pr list --repo badlogic/lsp-cli
 
-# 2. Create new branch from upstream/main
-git checkout -b pr4-comments upstream/main
-
-# 3. Check what comment-related changes exist in main
-git log main --oneline --all --grep="comment"
-git diff upstream/main main -- src/language-client.ts | grep -A10 -B2 "comment"
-
-# 4. Either cherry-pick commits OR manually add the methods
-# See docs/SESSION_2025-10-02_SUMMARY.md for full details
-
-# 5. Add comment extraction methods to src/language-client.ts:
-#    - isInsideStringLiteral()
-#    - extractInlineComments()
-#    - shouldExtractComments()
-#    - cleanInlineBlockComment()
-
-# 6. Update src/types.ts to add comments field:
-#    comments?: string[]
-
-# 7. Update llms.md with comments documentation
-
-# 8. Test
-npm run typecheck
-npm run build
-
-# 9. Commit and push
-git add -A
-git commit --no-verify -m "feat: Add inline comment extraction for e/code transparency"
-git push -u origin pr4-comments
-
-# 10. Create PR
-gh pr create --title "Add inline comment extraction" --body "..."
-```
-
-### Option 2: Wait for PR Feedback
-
-If upstream maintainer requests changes on existing PRs, address those first.
-
-```bash
-# Check PR status
-gh pr list --repo yannbam/lsp-cli
-
-# View specific PR
-gh pr view 6 --repo yannbam/lsp-cli
+# View specific PR with comments
+gh pr view 4 --repo badlogic/lsp-cli --comments  # Python
+gh pr view 5 --repo badlogic/lsp-cli --comments  # Rust
+gh pr view 6 --repo badlogic/lsp-cli --comments  # CLI wrappers
 
 # If changes needed, checkout PR branch
-git checkout pr2-python
-# Make changes
+git checkout pr2-python  # or pr3-rust, pr5-cli-wrappers
+# Make requested changes
+git add -A
 git commit --no-verify -m "fix: address review feedback"
 git push
+```
+
+### Option 2: Keep Fork Synced with Upstream
+
+Stay up-to-date with upstream changes:
+
+```bash
+# Fetch latest upstream
+git fetch upstream
+
+# Update main branch
+git checkout main
+git merge upstream/main
+git push origin main
 ```
 
 ## Important Notes
 
 - **Biome hook fails:** Always use `git commit --no-verify`
-- **Base all PRs on:** `upstream/main` (v0.1.3)
-- **Test every PR:** `npm run typecheck && npm run build`
+- **All PRs submitted:** To upstream badlogic/lsp-cli (not fork)
 - **Our main branch:** Has ALL features (Python, Rust, Comments, CLI wrappers)
 
 ## Files to Reference
 
-- `docs/SESSION_2025-10-02_SUMMARY.md` - Complete session details
-- `docs/PR_CREATION_HANDOFF.md` - Original handoff doc  
-- `/tmp/our-language-client.ts` - Saved version with comment methods (may not exist next session)
+- `docs/UPSTREAM_PR_STATUS.md` - Current PR status and monitoring guide
+- `docs/UPSTREAM_PR_ANALYSIS.md` - Original analysis and strategy
+- `docs/PR_CREATION_HANDOFF.md` - Original handoff doc
 
-## Key Insight
+## Achievement
 
-Comment extraction is the most complex PR because it adds **new functionality** to language-client.ts, not just configuration. All the code exists in main branch - just need to extract it cleanly and apply to upstream/main base.
+✅ All major enhancements successfully contributed back to upstream lsp-cli project!
